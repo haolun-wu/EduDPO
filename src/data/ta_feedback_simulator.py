@@ -1,8 +1,8 @@
 import json
 import torch
-import argparse
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from typing import Dict, List, Optional, Literal
+from typing import Dict, List, Optional
+from utils.text_processing import clean_text_formatting
 
 class TAFeedbackSimulator:
     def __init__(self, model_name: str):
@@ -170,23 +170,3 @@ def process_ta_feedback(input_file: str, output_file: str, model_name: str, max_
             continue
     
     print(f"All TA feedback generated and saved to {output_file}")
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Generate TA feedback')
-    parser.add_argument('--input_file', type=str, default='data/questions_llm_feedbacks.json',
-                        help='Input JSON file containing questions and feedbacks')
-    parser.add_argument('--output_file', type=str, default='data/questions_ta_feedbacks.json',
-                        help='Output JSON file to save TA feedback')
-    parser.add_argument('--model', type=str, default='microsoft/Phi-4-mini-instruct',
-                        help='Model to use for generating TA feedback')
-    parser.add_argument('--max_prompt_tokens', type=int, default=6000,
-                        help='Maximum number of tokens allowed in the prompt')
-    
-    args = parser.parse_args()
-    
-    process_ta_feedback(
-        input_file=args.input_file,
-        output_file=args.output_file,
-        model_name=args.model,
-        max_prompt_tokens=args.max_prompt_tokens
-    ) 

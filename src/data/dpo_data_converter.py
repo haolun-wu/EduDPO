@@ -1,6 +1,8 @@
 import json
 from typing import List, Dict
-from utils import clean_text_formatting
+from utils.text_processing import clean_text_formatting
+# from ..config.prompts import generate_DPO_training_prompt
+
 
 NEW2_AI_PROMPT = """
 Focus on these issues only:
@@ -15,7 +17,7 @@ For issues, list them and provide brief corrective guidance if explanations were
 Tone: Be a smart, kind, and insightful 20-year-old university teacher. Direct feedback to the student ("you").
 """
 
-def generate_prompt(question_text: str, ta_solution: str, stu_solution: str) -> str:
+def generate_DPO_training_prompt(question_text: str, ta_solution: str, stu_solution: str) -> str:
     prompt = f'''
     You are providing feedback to students on their probability homework. 
 
@@ -47,7 +49,7 @@ def convert_to_dpo_samples(input_file: str, output_file: str) -> None:
     
     for item in original_data:
         # Generate the prompt
-        prompt = generate_prompt(
+        prompt = generate_DPO_training_prompt(
             question_text=item['question_text'],
             ta_solution=item['ta_solution'],
             stu_solution=item['stu_solution']
@@ -89,7 +91,7 @@ def convert_to_dpo_parallel_format(input_file: str, output_file: str) -> None:
     
     for item in original_data:
         # Generate the prompt
-        prompt = generate_prompt(
+        prompt = generate_DPO_training_prompt(
             question_text=item['question_text'],
             ta_solution=item['ta_solution'],
             stu_solution=item['stu_solution']
@@ -116,14 +118,3 @@ def convert_to_dpo_parallel_format(input_file: str, output_file: str) -> None:
     # Save the parallel format data
     with open(output_file, 'w') as f:
         json.dump(parallel_data, f, indent=4, ensure_ascii=False)
-
-if __name__ == "__main__":
-    input_file = "data/questions_ta_feedbacks.json"
-    output_file1 = "data/dpo_training_samples.json"
-    output_file2 = "data/dpo_training_samples_parallel.json"
-    
-    # Convert to individual samples format
-    convert_to_dpo_samples(input_file, output_file1)
-    
-    # Convert to parallel format
-    convert_to_dpo_parallel_format(input_file, output_file2) 
