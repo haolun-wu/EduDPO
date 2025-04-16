@@ -1,0 +1,24 @@
+name: "dpo"
+args: 
+  # Main arguments
+  beta: 0.5
+  learning_rate: 0.00001
+  num_train_epochs: 1
+  lr_scheduler_type: "cosine"
+  loss_type: "hinge"
+  
+  # Efficient training
+  fp16: True
+  gradient_checkpointing: True 
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8 
+
+  # Other less important 
+  warmup_ratio: 0.1 
+
+# Parameter Efficient Finetuning with LoRA
+lora:
+  r: 32
+  lora_alpha: 64
+
+seed: 32
