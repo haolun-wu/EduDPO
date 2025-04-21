@@ -19,5 +19,8 @@ args:
 lora:
   r: 32
   lora_alpha: 64
+  target_modules: ["q_proj", "v_proj"]  # Add this line
+  bias: "none"  # Add this line
+  task_type: "CAUSAL_LM"  # Add this line
 
 seed: 32
