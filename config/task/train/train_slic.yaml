@@ -1,7 +1,7 @@
 name: "dpo"
 args: 
   # Main arguments
-  beta: 0.5
+  beta: 0.05 # 0.01
   learning_rate: 0.00001
   num_train_epochs: 1
   lr_scheduler_type: "cosine"
@@ -15,10 +15,5 @@ args:
 
   # Other less important 
   warmup_ratio: 0.1 
-
-# Parameter Efficient Finetuning with LoRA
-lora:
-  r: 32
-  lora_alpha: 64
 
 seed: 32

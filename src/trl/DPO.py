@@ -46,7 +46,6 @@ class DPO():
         if peft_config is not None:
             print("Peft Config", peft_config)
 
-
         trainer = DPOTrainer(
             model=model,
             peft_config=peft_config,
@@ -126,8 +125,7 @@ class DPO():
                 "lora_alpha": 64,
                 "lora_dropout": 0.05,
                 "bias": "none",
-                # "target_modules": "all-linear",
-                "target_modules": ["q_proj", "v_proj"],
+                "target_modules": "all-linear",
                 "task_type": "CAUSAL_LM",
             }
             lora_config.update(self.model_agent.config.task.lora)

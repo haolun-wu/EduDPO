@@ -1,0 +1,36 @@
+name: feedback
+instructions:
+
+  genrate_feedback:
+
+    - role: user
+      content: |+
+        Please act like a teaching assistant in a probability course. 
+        Your task is to provide detailed feedback on a student's solution to a probability problem.
+        You should first state whether the student's solution is correct or not.
+
+        Problem:
+        {question}
+
+        Suggested Solution:
+        {ta_solution}
+
+        Student's Solution:
+        {stu_solution}
+        
+        Your feedback:
+
+      hyperparameters:
+        n: 1
+        num_beams: 1
+        top_p: null
+        temperature: 0.0
+        max_tokens: 2024
+
+      extract:
+        - feedback
+
+    - role: assistant
+      content: "{feedback}"
+
+
