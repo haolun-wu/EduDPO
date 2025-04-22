@@ -1,6 +1,5 @@
 """ DPO training class """
 
-from src.models import HuggingFaceLocalModel
 from utils.cuda import claim_memory
 
 from trl import DPOTrainer, DPOConfig
