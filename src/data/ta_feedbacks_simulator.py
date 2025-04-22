@@ -1,5 +1,6 @@
 import json
 import torch
+import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import Dict, List, Optional
 from utils.text_processing import clean_text_formatting
@@ -45,6 +46,33 @@ class TAFeedbackSimulator:
                     {llama_feedback}
 
                     Your feedback: """
+                    
+    # def _create_ta_prompt(self, question: str, ta_solution: str, stu_solution: str, 
+    #                     base_feedback: str, llama_feedback: str) -> str:
+    #     user_message = f"""You are an experienced and kind teaching assistant (TA) in a probability course. 
+    #             Your task is to provide detailed feedback on a student's solution to a probability problem. 
+    #             You should first state whether the student's solution is correct or not, and write a single paragraph of feedback.
+
+    #             Problem:
+    #             {question}
+
+    #             Suggested Solution (for reference):
+    #             {ta_solution}
+
+    #             Student's Solution:
+    #             {stu_solution}
+
+    #             Two LLMs have provided feedback on the student's solution just for your reference:
+    #             1. Feedback from LLM 1 (Base Model):
+    #             {base_feedback}
+
+    #             2. Feedback from LLM 2 (Llama Model):
+    #             {llama_feedback}
+
+    #             Your feedback:"""
+
+    #     return f"<|user|>{user_message}<|end|><|assistant|>"
+
 
     def generate_ta_feedback(self, question: str, ta_solution: str, stu_solution: str, 
                            base_feedback: str, llama_feedback: str, 
@@ -96,7 +124,8 @@ class TAFeedbackSimulator:
             )
         
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        print("Full response:", response[-50:])  # Debug print
+        response = re.sub(r'^[Aa]ssistant\s*\n+', '', response, count=1).strip()
+        # print("Full response:", response[-50:])  # Debug print
         
         # Extract the feedback text
         # The feedback should be everything after "Your feedback:"

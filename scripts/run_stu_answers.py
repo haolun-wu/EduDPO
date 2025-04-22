@@ -1,5 +1,6 @@
 import argparse
-from src import process_student_answers, TextModificationConfig
+from src.data.stu_answers_simulator import process_student_answers
+from utils.text_processing import TextModificationConfig
 
 def main():
     parser = argparse.ArgumentParser(description='Generate student solutions using LLM')
@@ -9,7 +10,7 @@ def main():
                         help='Output JSON file to save student solutions')
     parser.add_argument('--model', type=str, default='mistralai/Mistral-7B-Instruct-v0.3',
                         help='Model to use for generating student solutions')
-    parser.add_argument('--num_simulations', type=int, default=5,
+    parser.add_argument('--num_simulations', type=int, default=2,
                         help='Number of student simulations to generate per question')
     parser.add_argument('--removal_probability', type=float, default=0.3,
                         help='Probability of removing a sentence')

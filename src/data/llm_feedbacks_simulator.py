@@ -1,5 +1,6 @@
 import json
 import torch
+import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import Dict, List, Optional
 from utils.text_processing import clean_text_formatting
@@ -24,21 +25,36 @@ class FeedbackGenerator:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-    def _create_prompt(self, question: str, ta_solution: str, stu_solution: str) -> str:
-        return f"""Please act like a teaching assistant in a probability course. 
-                    Your task is to provide detailed feedback on a student's solution to a probability problem.
-                    You should first state whether the student's solution is correct or not.
+    # def _create_prompt(self, question: str, ta_solution: str, stu_solution: str) -> str:
+    #     return f"""Please act like a teaching assistant in a probability course. 
+    #                 Your task is to provide detailed feedback on a student's solution to a probability problem.
+    #                 You should first state whether the student's solution is correct or not.
 
-                Problem:
-                {question}
+    #             Problem:
+    #             {question}
 
-                Suggested Solution:
-                {ta_solution}
+    #             Suggested Solution:
+    #             {ta_solution}
 
-                Student's Solution:
-                {stu_solution}
+    #             Student's Solution:
+    #             {stu_solution}
                 
-                Your feedback:"""
+    #             Your feedback:"""
+    def _create_prompt(self, question: str, ta_solution: str, stu_solution: str) -> str:
+        messages = [
+            {"role": "system", "content": "Please act like a teaching assistant in a probability course. Your task is to provide detailed feedback on a student's solution to a probability problem. You should first state whether the student's solution is correct or not."},
+            {"role": "user", "content": f"""Problem:
+            {question}
+
+            Suggested Solution:
+            {ta_solution}
+
+            Student's Solution:
+            {stu_solution}
+
+            Your feedback:"""}
+            ]
+        return self.tokenizer.apply_chat_template(messages, tokenize=False)
 
     def generate_feedback(self, question: str, ta_solution: str, stu_solution: str) -> str:
         # Generate LLM feedback
@@ -58,10 +74,8 @@ class FeedbackGenerator:
             )
         
         full_response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        # print("\nFull LLM Response:")
-        # print(full_response[:20])
-        # print("\n")
-        
+        full_response = full_response.replace("assistant\n\n", "", 1).strip() # Remove the "assistant" prefix from the response for llama models
+
         # Extract feedback after "Your feedback:"
         if "Your feedback:" in full_response:
             feedback = full_response.split("Your feedback:")[1].strip()

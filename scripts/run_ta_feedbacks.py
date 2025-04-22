@@ -1,5 +1,5 @@
 import argparse
-from src.data.ta_feedback_simulator import process_ta_feedback
+from src.data.ta_feedbacks_simulator import process_ta_feedback
 
 def main():
     parser = argparse.ArgumentParser(description='Generate TA feedback')

@@ -1,5 +1,5 @@
 import argparse
-from src.data.llm_feedback_simulator import process_llm_feedback
+from src.data.llm_feedbacks_simulator import process_llm_feedback
 
 def main():
     parser = argparse.ArgumentParser(description='Generate feedback using LLM')

@@ -24,15 +24,16 @@ class StudentSimulator:
         # Set pad token if not set
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        
+
+
     def _create_student_prompt(self, question_text: str) -> str:
-        return f"""You are a student taking a probability course. You are trying to solve the following problem:
+        messages = [
+            {"role": "system", "content": "You are a student taking a probability course."},
+            {"role": "user", "content": f"You are trying to solve the following problem:\n\n{question_text}\n\nPlease provide your solution.\n\nYour solution:"}
+        ]
+        # Use chat template to format the messages into a prompt string
+        return self.tokenizer.apply_chat_template(messages, tokenize=False)
 
-                {question_text}
-
-                Please provide your solution.
-
-                Your solution:"""
 
     def generate_student_solution(self, question_text: str) -> str:
         prompt = self._create_student_prompt(question_text)
@@ -44,16 +45,47 @@ class StudentSimulator:
                 max_new_tokens=1024,
                 temperature=0.7,
                 top_p=0.9,
-                # do_sample=True,
-                # pad_token_id=self.tokenizer.pad_token_id,
-                # eos_token_id=self.tokenizer.eos_token_id,
-                # use_cache=True  # Enable KV cache
             )
         
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        # Extract only the student's solution part
-        solution = response.split("Your solution:")[1].strip()
+        
+        # Still keeping your logic to extract the solution part after "Your solution:"
+        if "Your solution:" in response:
+            solution = response.split("Your solution:")[-1].strip()
+        else:
+            solution = response.strip()
+        
         return solution
+        
+    # def _create_student_prompt(self, question_text: str) -> str:
+    #     return f"""You are a student taking a probability course. You are trying to solve the following problem:
+
+    #             {question_text}
+
+    #             Please provide your solution.
+
+    #             Your solution:"""
+
+    # def generate_student_solution(self, question_text: str) -> str:
+    #     prompt = self._create_student_prompt(question_text)
+    #     inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        
+    #     with torch.no_grad():
+    #         outputs = self.model.generate(
+    #             **inputs,
+    #             max_new_tokens=1024,
+    #             temperature=0.7,
+    #             top_p=0.9,
+    #             # do_sample=True,
+    #             # pad_token_id=self.tokenizer.pad_token_id,
+    #             # eos_token_id=self.tokenizer.eos_token_id,
+    #             # use_cache=True  # Enable KV cache
+    #         )
+        
+    #     response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+    #     # Extract only the student's solution part
+    #     solution = response.split("Your solution:")[1].strip()
+    #     return solution
 
 def process_student_answers(
     input_file: str,
