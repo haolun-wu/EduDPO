@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Feedback Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .question-block {
+            margin-bottom: 40px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
+        }
+        .feedback-section {
+            display: flex;
+            gap: 20px;
+        }
+        .column {
+            flex: 1;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-wrap: break-word;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="content"></div>
+
+    <script>
+        async function loadData() {
+            const response = await fetch('data/simulated/questions_ta_feedbacks.json');
+            const data = await response.json();
+            const container = document.getElementById('content');
+
+            data.forEach(item => {
+                const block = document.createElement('div');
+                block.className = 'question-block';
+
+                block.innerHTML = `
+                    <h2>Sample ID: ${item.id}</h2>
+                    <div class="section-title">Question:</div>
+                    <p>${item.question_text}</p>
+
+                    <div class="feedback-section">
+                        <div class="column">
+                            <div class="section-title">TA Solution</div>
+                            <p>${item.ta_solution.replace(/\n/g, '<br>')}</p>
+                        </div>
+                        <div class="column">
+                            <div class="section-title">Student Solution</div>
+                            <p>${item.stu_solution.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    </div>
+
+                    <div class="feedback-section">
+                        <div class="column">
+                            <div class="section-title">Base Model Feedback</div>
+                            <p>${item.base_feedback.replace(/\n/g, '<br>')}</p>
+                        </div>
+                        <div class="column">
+                            <div class="section-title">Llama Model Feedback</div>
+                            <p>${item.llama_feedback.replace(/\n/g, '<br>')}</p>
+                        </div>
+                        <div class="column">
+                            <div class="section-title">TA Feedback</div>
+                            <p>${item.ta_feedback.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(block);
+            });
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
