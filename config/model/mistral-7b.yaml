@@ -1,0 +1,9 @@
+---
+source: local
+name: mistralai/Mistral-7B-Instruct-v0.3
+dtype: 'fp16'
+quant: 4 # Ignored for now because requires installation for everyone 
+
+lora:
+  r: 32
+  lora_alpha: 64
