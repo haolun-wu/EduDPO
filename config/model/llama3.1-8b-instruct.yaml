@@ -4,3 +4,6 @@ name: 'meta-llama/Llama-3.1-8B-Instruct'
 dtype: 'fp16'
 quant: 4 # Ignored for now because requires installation for everyone 
 
+lora:
+  r: 32
+  lora_alpha: 64

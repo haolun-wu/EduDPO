@@ -130,7 +130,7 @@ class DPO():
                 "target_modules": ["q_proj", "v_proj"],
                 "task_type": "CAUSAL_LM",
             }
-            lora_config.update(self.config.task.lora)
+            lora_config.update(self.model_agent.config.task.lora)
             peft_config = LoraConfig(**lora_config) 
 
 
