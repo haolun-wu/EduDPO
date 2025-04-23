@@ -3,6 +3,10 @@ import os
 import sys
 import importlib.util
 import argparse
+import warnings
+
+# Filter out specific warnings
+warnings.filterwarnings("ignore")
 
 def main():
     # Add project root to Python path

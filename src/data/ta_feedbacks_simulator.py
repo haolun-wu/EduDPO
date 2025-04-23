@@ -4,6 +4,7 @@ import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import Dict, List, Optional
 from utils.text_processing import clean_text_formatting
+from tqdm import tqdm
 
 class TAFeedbackSimulator:
     def __init__(self, model_name: str):
@@ -18,62 +19,37 @@ class TAFeedbackSimulator:
             trust_remote_code=True,
             torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
             device_map="auto",
-            low_cpu_mem_usage=True
+            attn_implementation="flash_attention_2" if self.device == "cuda" else "eager",  # Use flash attention if available
         )
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
     def _create_ta_prompt(self, question: str, ta_solution: str, stu_solution: str, 
-                         base_feedback: str, llama_feedback: str) -> str:
-        return f"""You are an experienced and kind teaching assistant (TA) in a probability course. 
-                    Your task is to provide detailed feedback on a student's solution to a probability problem. 
-                    You should first state whether the student's solution is correct or not, and write a single paragraph of feedback.
+                        base_feedback: str, llama_feedback: str) -> list:
+        system_message = (
+            "You are an experienced and kind teaching assistant (TA) in a probability course. "
+            "Your task is to provide helpful and constructive feedback on a student's solution to a probability problem. "
+            "You should first state whether the student's solution is correct or not, and write a single paragraph of feedback."
+        )
 
-                    Problem:
-                    {question}
+        user_message = (
+            f"Problem:\n{question}\n\n"
+            f"Suggested Solution (for reference):\n{ta_solution}\n\n"
+            f"Student's Solution:\n{stu_solution}\n\n"
+            "Two LLMs have provided feedback on the student's solution just for your reference:\n"
+            f"1. Feedback from LLM 1 (Base Model):\n{base_feedback}\n\n"
+            f"2. Feedback from LLM 2 (Llama Model):\n{llama_feedback}\n\n"
+            "Your feedback:"
+        )
 
-                    Suggested Solution (for reference):
-                    {ta_solution}
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        return prompt
 
-                    Student's Solution:
-                    {stu_solution}
-
-                    Two LLMs have provided feedback on the student's solution just for your reference:
-                    1. Feedback from LLM 1 (Base Model):
-                    {base_feedback}
-
-                    2. Feedback from LLM 2 (Llama Model):
-                    {llama_feedback}
-
-                    Your feedback: """
                     
-    # def _create_ta_prompt(self, question: str, ta_solution: str, stu_solution: str, 
-    #                     base_feedback: str, llama_feedback: str) -> str:
-    #     user_message = f"""You are an experienced and kind teaching assistant (TA) in a probability course. 
-    #             Your task is to provide detailed feedback on a student's solution to a probability problem. 
-    #             You should first state whether the student's solution is correct or not, and write a single paragraph of feedback.
-
-    #             Problem:
-    #             {question}
-
-    #             Suggested Solution (for reference):
-    #             {ta_solution}
-
-    #             Student's Solution:
-    #             {stu_solution}
-
-    #             Two LLMs have provided feedback on the student's solution just for your reference:
-    #             1. Feedback from LLM 1 (Base Model):
-    #             {base_feedback}
-
-    #             2. Feedback from LLM 2 (Llama Model):
-    #             {llama_feedback}
-
-    #             Your feedback:"""
-
-    #     return f"<|user|>{user_message}<|end|><|assistant|>"
-
-
     def generate_ta_feedback(self, question: str, ta_solution: str, stu_solution: str, 
                            base_feedback: str, llama_feedback: str, 
                            max_prompt_tokens: int = 4000) -> Dict[str, str]:
@@ -88,7 +64,6 @@ class TAFeedbackSimulator:
         # Initial prompt creation
         prompt = self._create_ta_prompt(**inputs_dict)
         input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids[0]
-        print("Input length: ", len(input_ids))
 
         # Truncation loop if needed
         while len(input_ids) > max_prompt_tokens:
@@ -116,10 +91,12 @@ class TAFeedbackSimulator:
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
                 max_new_tokens=1024,
-                # temperature=0.7,
-                # top_p=0.9,
-                # do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                do_sample=True,
                 # pad_token_id=self.tokenizer.eos_token_id
             )
         
@@ -154,17 +131,10 @@ def process_ta_feedback(input_file: str, output_file: str, model_name: str, max_
     # Initialize an empty list for results (overwriting existing file)
     results = []
     
-    # Process each question
-    for item in data:
+    # Process each question with progress bar
+    for item in tqdm(data, desc="Generating TA feedback"):
         question_id = item['id']
         
-        # # Check if we already have TA feedback for this question
-        # existing_feedback = next((r for r in results if r['id'] == question_id), None)
-        # if existing_feedback:
-        #     print(f"Using existing TA feedback for question {question_id}")
-        #     continue
-        
-        print(f"Generating TA feedback for question {question_id}")
         try:
             # Generate TA feedback
             ta_result = simulator.generate_ta_feedback(
@@ -199,3 +169,9 @@ def process_ta_feedback(input_file: str, output_file: str, model_name: str, max_
             continue
     
     print(f"All TA feedback generated and saved to {output_file}")
+    
+    del simulator.model
+    del simulator.tokenizer
+    torch.cuda.empty_cache()
+    import gc
+    gc.collect()

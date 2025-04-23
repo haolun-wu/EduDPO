@@ -10,7 +10,7 @@ def main():
                         help='Output JSON file to save student solutions')
     parser.add_argument('--model', type=str, default='mistralai/Mistral-7B-Instruct-v0.3',
                         help='Model to use for generating student solutions')
-    parser.add_argument('--num_simulations', type=int, default=2,
+    parser.add_argument('--num_simulations', type=int, default=5,
                         help='Number of student simulations to generate per question')
     parser.add_argument('--removal_probability', type=float, default=0.3,
                         help='Probability of removing a sentence')

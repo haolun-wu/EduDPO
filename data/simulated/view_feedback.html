@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>TA and LLM Feedback Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .box {
+            width: 45%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        .nav {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>TA and LLM Feedback Viewer</h1>
+    <div class="container">
+        <div class="box" id="left-box">
+            <h2>Question & TA Solution</h2>
+            <p><strong>Question:</strong> <span id="question_text"></span></p>
+            <p><strong>TA Solution:</strong> <span id="ta_solution"></span></p>
+            <p><strong>Stu Solution:</strong> <span id="stu_solution"></span></p>
+        </div>
+        <div class="box" id="right-box">
+            <h2>Feedbacks</h2>
+            <p><strong>base Feedback:</strong> <span id="base_feedback"></span></p>
+            <p><strong>llama Feedback:</strong> <span id="llama_feedback"></span></p>
+            <p><strong>TA Feedback:</strong> <span id="ta_feedback"></span></p>
+        </div>
+    </div>
+
+    <div class="nav">
+        <button onclick="prevSample()">Previous</button>
+        <span id="sample-id">Sample ID: 0</span>
+        <button onclick="nextSample()">Next</button>
+    </div>
+
+    <script>
+        let data = [];
+        let currentIndex = 0;
+
+        async function loadData() {
+            const response = await fetch('questions_ta_feedbacks.json');
+            data = await response.json();
+            updateView();
+        }
+
+        function updateView() {
+            const sample = data[currentIndex];
+            document.getElementById('question_text').textContent = sample.question_text;
+            document.getElementById('ta_solution').textContent = sample.ta_solution;
+            document.getElementById('stu_solution').textContent = sample.stu_solution;               // <-- Added!
+            document.getElementById('base_feedback').textContent = sample.base_feedback;             // <-- Added!
+            document.getElementById('llama_feedback').textContent = sample.llama_feedback;
+            document.getElementById('ta_feedback').textContent = sample.ta_feedback;
+            document.getElementById('sample-id').textContent = `Sample ID: ${sample.id}`;
+        }
+
+
+        function nextSample() {
+            if (currentIndex < data.length - 1) {
+                currentIndex++;
+                updateView();
+            }
+        }
+
+        function prevSample() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateView();
+            }
+        }
+
+        // Load the data on page load
+        window.onload = loadData;
+    </script>
+
+</body>
+
+</html>

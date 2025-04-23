@@ -105,6 +105,7 @@ def randomly_remove_information(
 ) -> str:
     """
     Randomly modify text by removing parts, changing numbers, and adding modifications.
+    Ensures at least one part is always kept.
     
     Args:
         text: The input text to modify
@@ -130,18 +131,29 @@ def randomly_remove_information(
     
     # Then remove random parts
     parts = split_into_parts(text)
-    filtered_parts = [
-        p for p in parts 
-        if random.random() > config.removal_probability
-    ]
+    
+    # Ensure at least one part is kept
+    if len(parts) > 1:
+        # Randomly select parts to keep, ensuring at least one is kept
+        kept_parts = []
+        for p in parts:
+            if random.random() > config.removal_probability:
+                kept_parts.append(p)
+        
+        # If no parts were kept, randomly select one
+        if not kept_parts:
+            kept_parts = [random.choice(parts)]
+    else:
+        # If there's only one part, keep it
+        kept_parts = parts
     
     # Join parts with commas
-    text = ', '.join(filtered_parts)
+    text = ', '.join(kept_parts)
     
     # Add random modifications
     text = add_random_modifications(text)
     
-    return text 
+    return text
 
 def clean_text_formatting(text: str) -> str:
     """

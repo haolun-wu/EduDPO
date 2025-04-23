@@ -3,7 +3,7 @@ args:
   # Main arguments
   beta: 0.5
   learning_rate: 0.00001
-  num_train_epochs: 1
+  num_train_epochs: 20
   lr_scheduler_type: "cosine"
 
   # Efficient training

@@ -1,2 +1,2 @@
 
-path: './data/simulated/questions_llm_feedbacks.json'
+path: './data/processed/dpo_training_samples.json'

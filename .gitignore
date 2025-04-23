@@ -9,4 +9,6 @@ __pycache__/
 logs/
 *.out
 
+dpo_output/
+
 wandb/

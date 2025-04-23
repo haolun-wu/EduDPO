@@ -20,7 +20,7 @@ class CustomPipeline():
         self.model = model
         self.tokenizer = tokenizer
         self.return_full_text = return_full_text
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     def __call__(self, input_messages, **gen_kwargs):
         # Adapting generation configurations
