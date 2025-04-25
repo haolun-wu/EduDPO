@@ -47,7 +47,7 @@ class FeedbackGenerator:
                 )
             }
         ]
-        return self.tokenizer.apply_chat_template(messages, tokenize=False)
+        return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
 
     def generate_feedback(self, question: str, ta_solution: str, stu_solution: str) -> str:
@@ -64,14 +64,14 @@ class FeedbackGenerator:
                 **inputs,
                 pad_token_id=self.tokenizer.pad_token_id,
                 max_new_tokens=1024,
-                temperature=0.7,
-                top_p=0.9,
-                do_sample=True,
+                # temperature=0.7,
+                # top_p=0.9,
+                # do_sample=True,
                 
             )
         
         full_response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        full_response = full_response.replace("assistant\n\n", "", 1).strip() # Remove the "assistant" prefix from the response for llama models
+        full_response = full_response.replace("<|assistant|>\n", "", 1).strip() # Remove the "assistant" prefix from the response for llama models
 
         # Extract feedback after "Your feedback:"
         if "Your feedback:" in full_response:

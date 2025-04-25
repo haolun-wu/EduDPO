@@ -7,10 +7,12 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 
-source /home/mila/h/haolun.wu/projects/EduDPO/myenv/bin/activate
+source /home/mila/h/haolun.wu/projects/EduDPO/myvenv/bin/activate
 module load python/3.10
 nvidia-smi
 
-python run.py run_dpo
+python run.py run_data_full_pipeline
+python run.py prepare_dpo_data
+# python run.py run_dpo
 
 echo "Finished running DPO"

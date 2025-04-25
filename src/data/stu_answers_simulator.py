@@ -36,7 +36,7 @@ class StudentSimulator:
                 "Your solution:"
             )}
         ]
-        return self.tokenizer.apply_chat_template(messages, tokenize=False)
+        return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
     def generate_student_solution(self, question_text: str) -> str:
         prompt = self._create_student_prompt(question_text)

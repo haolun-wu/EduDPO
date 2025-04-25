@@ -46,8 +46,7 @@ class TAFeedbackSimulator:
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message}
         ]
-        prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        return prompt
+        return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
                     
     def generate_ta_feedback(self, question: str, ta_solution: str, stu_solution: str, 
@@ -94,10 +93,9 @@ class TAFeedbackSimulator:
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
                 max_new_tokens=1024,
-                temperature=0.7,
-                top_p=0.9,
-                do_sample=True,
-                # pad_token_id=self.tokenizer.eos_token_id
+                # temperature=0.7,
+                # top_p=0.9,
+                # do_sample=True,
             )
         
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
