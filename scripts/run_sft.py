@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('--training_configs', nargs='+', type=str, 
                         default=["config/task/train/train_sft_v1.yaml"],
                         help='Paths towards training configuration files to run sequentially')
-    parser.add_argument('--save_dir', type=str, default='./dpo_output',
+    parser.add_argument('--save_dir', type=str, default='./sft_output',
                         help='Base path for saving outputs')
     return parser.parse_args()
 
