@@ -64,7 +64,6 @@ def prepare_data(file_path, tokenizer):
         return example 
     
     dataset = dataset.map(add_chat_template, batched=False)
-    print(dataset["chosen"])
     dataset = dataset.train_test_split(test_size=0.1)
 
     return dataset 
@@ -76,9 +75,12 @@ def clear_memory():
     gc.collect()
 
 def main():
+    
     args = parse_args()
+    # Initialize model and dataset
     model_config = DotMap(load_yaml(args.model_config))
-    dataset_dict = prepare_data(args.input_file)
+    model_agent = HuggingFaceLocalModel(model_config)
+    dataset_dict = prepare_data(args.input_file, model_agent.tokenizer)
     
     # Run each training configuration sequentially
     for config_path in args.training_configs:
@@ -92,10 +94,8 @@ def main():
         print(f"Training with configuration: {training_config.name}")
         print(f"Output will be saved to: {save_dir}")
         
-        # Initialize model and trainer
-        model_agent = HuggingFaceLocalModel(model_config)
+        # Initialize trainer
         set_seed(training_config.seed)
-        
         dpo = DPO(model_agent, training_config, str(save_dir))
         dpo.run(dataset_dict)
         
