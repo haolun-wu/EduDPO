@@ -62,7 +62,6 @@ class DPO():
         claim_memory()
 
 
-
     def prepare_training(self):
         """
         Prepare a dictionary of training arguments for the Trainer.
@@ -113,7 +112,6 @@ class DPO():
         return base_training_args
 
 
-
     def prepare_peft_config(self, base_training_args):
         # We are training LORA adapter so we can
         # load the model in any precision we want
@@ -150,3 +148,7 @@ class DPO():
             base_training_args["bf16"] = False
 
         return peft_config 
+
+
+    def prepare_dataset(self):
+        pass

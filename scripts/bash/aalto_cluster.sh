@@ -17,6 +17,5 @@ module load model-huggingface
 
 module load mamba;
 source activate eaai;
-nvidia-smi
 
 python3 scripts/run_dpo.py 

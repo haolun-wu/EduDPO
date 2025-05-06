@@ -32,7 +32,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def prepare_data(file_path):
+
+
+
+def prepare_data(file_path, tokenizer):
     """ 
     Loads data from a file and
     return a HuggingFace DatasetDict object 
@@ -47,6 +50,21 @@ def prepare_data(file_path):
     else:
         raise ValueError(f"Invalid data type {type(data)}")
     
+    def add_chat_template(example):
+        original_prompt = example["prompt"]
+        instruction = [{"role": "user", "content": original_prompt}]
+        example["prompt"] = tokenizer.apply_chat_template(instruction, add_generation_prompt=True, tokenize=False)
+        instruction.append({"role": "assistant", "content": example["chosen"]})
+        example["chosen"] = tokenizer.apply_chat_template(instruction, add_generation_prompt=True, tokenize=False)
+        
+        instruction = [{"role": "user", "content": original_prompt}]
+        instruction.append({"role": "assistant", "content": example["rejected"]})
+        example["rejected"] = tokenizer.apply_chat_template(instruction, add_generation_prompt=True, tokenize=False)
+
+        return example 
+    
+    dataset = dataset.map(add_chat_template, batched=False)
+    print(dataset["chosen"])
     dataset = dataset.train_test_split(test_size=0.1)
 
     return dataset 
