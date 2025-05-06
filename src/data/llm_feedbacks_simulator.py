@@ -71,7 +71,7 @@ class FeedbackGenerator:
             )
         
         full_response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        full_response = full_response.replace("<|assistant|>\n", "", 1).strip() # Remove the "assistant" prefix from the response for llama models
+        full_response = full_response.replace("assistant\n\n", "", 1).strip() # Remove the "assistant" prefix from the response for llama models
 
         # Extract feedback after "Your feedback:"
         if "Your feedback:" in full_response:

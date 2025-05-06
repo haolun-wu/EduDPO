@@ -23,8 +23,9 @@ def parse_args():
     parser.add_argument('--training_configs', nargs='+', type=str, 
                         default=[
                             'config/task/train/train_dpo.yaml', 
-                            'config/task/train/train_slic_v1.yaml',
-                            'config/task/train/train_slic_v2.yaml'
+                            'config/task/train/train_rpo.yaml', 
+                            'config/task/train/train_slic_beta_0.01.yaml',
+                            'config/task/train/train_slic_beta_0.05.yaml'
                         ],
                         help='Paths towards training configuration files to run sequentially')
     parser.add_argument('--save_dir', type=str, default='./dpo_output',

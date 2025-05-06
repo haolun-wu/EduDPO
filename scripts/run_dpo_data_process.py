@@ -2,66 +2,12 @@ import argparse
 import json
 import random
 from pathlib import Path
-from src.data.dpo_data_converter import convert_to_dpo_samples
-
-def split_data(data: list, train_ratio: float = 0.8, val_ratio: float = 0.1, test_ratio: float = 0.1,
-               seed: int = 42):
-    """
-    Split the data into train, validation, and test sets.
-    
-    Args:
-        data: List of data samples
-        train_ratio: Ratio of data for training (default: 0.8)
-        val_ratio: Ratio of data for validation (default: 0.1)
-        test_ratio: Ratio of data for testing (default: 0.1)
-        seed: Random seed for reproducibility
-        
-    Returns:
-        Tuple of (train_data, val_data, test_data)
-    """
-    # Set random seed
-    random.seed(seed)
-    
-    # Shuffle the data
-    random.shuffle(data)
-    
-    # Calculate split indices
-    n = len(data)
-    # Calculate exact number of samples for each split
-    n_train = int(n * train_ratio)
-    n_val = int(n * val_ratio)
-    n_test = n - n_train - n_val  # Use remaining samples for test set
-    
-    # Split the data
-    train_data = data[:n_train]
-    val_data = data[n_train:n_train + n_val]
-    test_data = data[n_train + n_val:]
-    
-    return train_data, val_data, test_data
-
-def add_sequential_ids(data: list):
-    """
-    Add sequential IDs to the data while preserving original IDs.
-    Each split will have IDs starting from 0.
-    
-    Args:
-        data: List of data samples
-        
-    Returns:
-        List of data samples with new sequential IDs
-    """
-    for i, item in enumerate(data):
-        item['original_id'] = item['id']  # Preserve original ID
-        item['id'] = i  # Add new sequential ID starting from 0
-    return data
-
-def save_json(data: list, file_path: str):
-    """Save data to a JSON file."""
-    # Create output directory if it doesn't exist
-    Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(file_path, 'w') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+from src.data.dpo_data_converter import (
+    split_data,
+    add_sequential_ids,
+    save_json,
+    convert_to_dpo_samples
+)
 
 def main():
     parser = argparse.ArgumentParser(description='Prepare data for DPO training')

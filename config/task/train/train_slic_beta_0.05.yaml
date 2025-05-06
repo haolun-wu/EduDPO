@@ -1,12 +1,12 @@
-name: "rpo"
+name: "slic_beta_0.05"
 args: 
   # Main arguments
-  beta: 0.5
-  rpo_alpha: 1.0
+  beta: 0.05
   learning_rate: 0.00001
-  num_train_epochs: 20
+  num_train_epochs: 3
   lr_scheduler_type: "cosine"
-
+  loss_type: "hinge"
+  
   # Efficient training
   fp16: True
   gradient_checkpointing: True 

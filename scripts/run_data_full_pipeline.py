@@ -68,10 +68,10 @@ def main():
     parser.add_argument('--ta_model', type=str, default='microsoft/Phi-4-mini-instruct')
     
     # Student answer generation parameters
-    parser.add_argument('--num_simulations', type=int, default=5)
-    parser.add_argument('--removal_probability', type=float, default=0.3)
+    parser.add_argument('--num_simulations', type=int, default=10)
+    parser.add_argument('--removal_probability', type=float, default=0.2)
     parser.add_argument('--number_modification_range', type=float, default=0.2)
-    parser.add_argument('--number_modification_chance', type=float, default=0.5)
+    parser.add_argument('--number_modification_chance', type=float, default=0.2)
     
     # TA feedback parameters
     parser.add_argument('--max_prompt_tokens', type=int, default=8192)
