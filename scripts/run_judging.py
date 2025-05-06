@@ -4,6 +4,7 @@ a validation or testing dataset."""
 import os
 import gc
 import re
+from src.judge.judging import generate_judging_prompt
 import torch
 
 import json
@@ -19,7 +20,7 @@ from datasets import Dataset
 
 def parse_args():
     parser = ArgumentParser(description='Run Inference')
-    parser.add_argument('--input_file', type=str, default="data/processed/questions_ta_feedbacks_train.json",
+    parser.add_argument('--input_file', type=str, default="data/inference/llama3.1-8b-instruct_questions_ta_feedbacks_train.json",
                         help='Input JSON file containing TA answers')
     parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
                         help='Path towards model configuration file that is going to judge')
@@ -42,9 +43,10 @@ def prepare_data(file_path, tokenizer):
         raise ValueError(f"Invalid data type {type(data)}")
     
     def add_chat_template(example):
-        text = generate_DPO_training_prompt(example["question_text"], 
-                                            example["ta_solution"], 
-                                            example["stu_solution"])
+        text = generate_judging_prompt(example["question_text"], 
+                                       example["ta_solution"], 
+                                       example["stu_solution"],
+                                       example["feedback"])
         instruction = [{"role": "user", "content": text}]
         text = tokenizer.apply_chat_template(instruction, 
                                              add_generation_prompt=True, 
@@ -55,7 +57,7 @@ def prepare_data(file_path, tokenizer):
         return example 
     
     dataset = dataset.map(add_chat_template, batched=False)
-    print("Example SFT step", dataset[0]["text"])
+    print("Example judging step", dataset[0]["text"])
 
     return dataset 
 
@@ -86,7 +88,7 @@ def main():
     inference_agent = Inference(model_agent.model, model_agent.tokenizer)
     dataset = prepare_data(args.input_file, model_agent.tokenizer)
     
-    def generate_feedback(examples):
+    def generate_judging(examples):
         
         responses = inference_agent.pipe(examples["text"], 
                                          return_full_text=False,
@@ -96,15 +98,15 @@ def main():
                      for j in range(len(resp))]
         responses = [decode_json_response(r) for r in responses]
         
-        examples["feedback"] = [r["feedback"] for r in responses]
-        examples["rubric"] = [r["rubric"] for r in responses] 
+        examples["correctness"] = [r["correctness"] for r in responses]
+        examples["helpfulness"] = [r["helpfulness"] for r in responses] 
         examples["response"] = [r["response"] for r in responses] 
 
         return examples
 
     dataset = dataset.select(list(range(1)))
-    dataset = dataset.map(generate_feedback, batched=True, batch_size=2)
-    print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
+    dataset = dataset.map(generate_judging, batched=True, batch_size=2)
+    print("dataset response", dataset["correctness"][0], dataset["response"][0])
     filename = args.model_config.split("/")[-1].replace(".yaml", "")
     filename = filename + "_" + args.input_file.split("/")[-1]#.replace(".json", "")
     dataset.to_json(os.path.join(args.save_dir, filename))

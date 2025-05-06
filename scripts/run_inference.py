@@ -114,7 +114,7 @@ def main():
     print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
     filename = args.model_config.split("/")[-1].replace(".yaml", "")
     filename = filename + "_" + args.input_file.split("/")[-1]#.replace(".json", "")
-    dataset.to_json(os.path.join(args.save_dir, filename))
+    dataset.to_json(os.path.join(args.save_dir, filename), lines=False)
 
 if __name__ == "__main__":
     main()

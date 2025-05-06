@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --job-name=gpu_run
-#SBATCH --mem=32GB
+#SBATCH --mem=48GB
 #SBATCH --time=00:10:00
 #SBATCH --cpus-per-task=1
 #SBATCH --gpus-per-node=1
@@ -19,5 +19,6 @@ source activate eaai;
 
 # python3 scripts/run_sft.py 
 python3 scripts/run_inference.py 
+python3 scripts/run_judging.py 
 
 #SBATCH --partition=gpu-debug
