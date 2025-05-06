@@ -80,6 +80,7 @@ class HuggingFaceLocalModel():
             device_map = self.config.device_map
 
         if self.is_adapter:
+            print("is adapter")
             model = AutoPeftModelForCausalLM.from_pretrained(
                 self.config.name,
                 torch_dtype=torch_dtype,

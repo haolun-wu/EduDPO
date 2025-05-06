@@ -22,10 +22,8 @@ def parse_args():
     parser.add_argument('--input_file', type=str, default="data/processed/questions_ta_feedbacks_train.json",
                         help='Input JSON file containing TA answers')
     parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
-                        help='Path towards model configuration file')
-    parser.add_argument('--train_folder', type=str, default="./dpo_output",
-                        help='Path towards a training configuration file')
-    parser.add_argument('--save_dir', type=str, default='./data/inference/',
+                        help='Path towards model configuration file that is going to judge')
+    parser.add_argument('--save_dir', type=str, default='./data/judge/',
                         help='Base path for saving outputs')
     return parser.parse_args()
 
@@ -75,7 +73,7 @@ def decode_json_response(response):
         answer_dict = json.loads(r)
         answer_dict["response"] = response
     except Exception:
-        answer_dict = {"feedback": "", "rubric": "", 
+        answer_dict = {"correctness": "", "helpfulness": "", 
                        "response": response}
     
     return answer_dict
@@ -84,23 +82,18 @@ def main():
     
     args = parse_args()
     model_config = DotMap(load_yaml(args.model_config))
-    is_adapter = False
-    if args.train_folder is not None:
-        is_adapter = True
-        model_config.name = args.train_folder
-    
-    model_agent = HuggingFaceLocalModel(model_config, is_adapter)
+    model_agent = HuggingFaceLocalModel(model_config)
     inference_agent = Inference(model_agent.model, model_agent.tokenizer)
     dataset = prepare_data(args.input_file, model_agent.tokenizer)
     
     def generate_feedback(examples):
+        
         responses = inference_agent.pipe(examples["text"], 
                                          return_full_text=False,
                                          **{"max_new_tokens": 1024})
         responses = [resp[j]['generated_text'] 
                      for resp in responses 
                      for j in range(len(resp))]
-        print("responses", responses)
         responses = [decode_json_response(r) for r in responses]
         
         examples["feedback"] = [r["feedback"] for r in responses]
