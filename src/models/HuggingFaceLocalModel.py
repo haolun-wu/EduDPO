@@ -1,5 +1,6 @@
 """ Wrapper class around common HuggingFace model loading and inference functionalities """
 
+import os 
 import torch 
 from accelerate import Accelerator
 from transformers import (

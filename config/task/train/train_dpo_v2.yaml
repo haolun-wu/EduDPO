@@ -4,7 +4,7 @@ args:
   beta: 0.5
   rpo_alpha: 1.0
   learning_rate: 0.00001
-  num_train_epochs: 20
+  num_train_epochs: 3
   lr_scheduler_type: "cosine"
 
   # Efficient training

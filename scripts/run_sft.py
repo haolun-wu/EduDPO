@@ -52,11 +52,16 @@ def prepare_data(file_path, tokenizer):
         text = generate_DPO_training_prompt(example["question_text"], 
                                             example["ta_solution"], 
                                             example["stu_solution"])
-        example["text"] = text
+        instruction = [{"role": "user", "content": text}, 
+                       {"role": "assistant", "content": example["ta_feedback"]}]
 
+        example["text"] = tokenizer.apply_chat_template(instruction, 
+                                                        tokenize=False)
+        
         return example 
     
     dataset = dataset.map(add_chat_template, batched=False)
+    print("Example SFT step", dataset[0]["text"])
     dataset = dataset.train_test_split(test_size=0.1)
 
     return dataset 

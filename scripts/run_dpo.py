@@ -2,6 +2,9 @@
 Runs Direct Preference Optimization training on our current data samples
 """
 
+import gc
+import torch
+
 from argparse import ArgumentParser
 from dotmap import DotMap
 from src.models.HuggingFaceLocalModel import HuggingFaceLocalModel
@@ -9,9 +12,6 @@ from src.trl.DPO import DPO
 from utils.files import load_json, load_yaml
 from utils.seed import set_seed
 from pathlib import Path
-import gc
-import torch
-
 from datasets import Dataset  
 
 def parse_args():
@@ -53,13 +53,16 @@ def prepare_data(file_path, tokenizer):
     def add_chat_template(example):
         original_prompt = example["prompt"]
         instruction = [{"role": "user", "content": original_prompt}]
-        example["prompt"] = tokenizer.apply_chat_template(instruction, add_generation_prompt=True, tokenize=False)
+        example["prompt"] = tokenizer.apply_chat_template(instruction, 
+                                                          add_generation_prompt=True, 
+                                                          tokenize=False)
+
         instruction.append({"role": "assistant", "content": example["chosen"]})
-        example["chosen"] = tokenizer.apply_chat_template(instruction, add_generation_prompt=True, tokenize=False)
+        example["chosen"] = tokenizer.apply_chat_template(instruction, tokenize=False)
         
         instruction = [{"role": "user", "content": original_prompt}]
         instruction.append({"role": "assistant", "content": example["rejected"]})
-        example["rejected"] = tokenizer.apply_chat_template(instruction, add_generation_prompt=True, tokenize=False)
+        example["rejected"] = tokenizer.apply_chat_template(instruction, tokenize=False)
 
         return example 
     
