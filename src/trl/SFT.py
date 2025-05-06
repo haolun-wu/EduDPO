@@ -1,18 +1,12 @@
 
 from trl import SFTConfig, SFTTrainer
 from utils.cuda import claim_memory
+from src.trl.TRL import TRL
 
-class SFT():
+class SFT(TRL):
 
     def __init__(self, model_agent, training_config, save_dir) -> None:
-        self.model_agent = model_agent
-        self.training_config = training_config
-        self.save_dir = save_dir
-
-    
-    def run():
-        pass 
-
+        super().__init__(model_agent, training_config, save_dir)
 
     def train(self, dataset_dict, training_args, peft_config=None):
         model = self.model_agent.model

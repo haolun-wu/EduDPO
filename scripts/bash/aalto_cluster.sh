@@ -18,4 +18,4 @@ module load model-huggingface
 module load mamba;
 source activate eaai;
 
-python3 scripts/run_dpo.py 
+python3 scripts/run_sft.py 
