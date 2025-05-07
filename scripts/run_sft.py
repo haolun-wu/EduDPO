@@ -54,7 +54,7 @@ def prepare_data(file_path, tokenizer):
                                             example["stu_solution"])
         instruction = [{"role": "user", "content": text}, 
                        {"role": "assistant", "content": example["ta_feedback"]}]
-
+        print("instruction is", instruction)
         example["text"] = tokenizer.apply_chat_template(instruction, 
                                                         tokenize=False)
         
@@ -79,7 +79,7 @@ def main():
     # Initialize model and dataset
     model_config = DotMap(load_yaml(args.model_config))
     model_agent = HuggingFaceLocalModel(model_config)
-    dataset_dict = prepare_data(args.input_file, model_config.tokenizer)
+    dataset_dict = prepare_data(args.input_file, model_agent.tokenizer)
     
     # Run each training configuration sequentially
     for config_path in args.training_configs:
