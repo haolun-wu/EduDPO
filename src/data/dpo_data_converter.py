@@ -25,7 +25,7 @@ def generate_DPO_training_prompt(question_text: str, ta_solution: str, stu_solut
 
     {NEW2_AI_PROMPT}
     
-    Important: Return the feedback as a JSON dictionary. The dictionary should contain only two keys: "feedback" and "score".
+    Important: Return the feedback as a JSON dictionary. The dictionary should contain only two keys: "feedback" and "rubric".
 
     "feedback": A string providing feedback for the student's explanation.
     "rubric": One of the following strings: answer-correct, answer-incorrect, answer-major-error, answer-minor-error
