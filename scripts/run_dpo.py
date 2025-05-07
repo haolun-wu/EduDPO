@@ -20,14 +20,9 @@ def parse_args():
                         help='Input JSON file containing the DPO processed data')
     parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
                         help='Path towards model configuration file')
-    parser.add_argument('--training_configs', nargs='+', type=str, 
-                        default=[
-                            'config/task/train/train_dpo.yaml', 
-                            'config/task/train/train_rpo.yaml', 
-                            'config/task/train/train_slic_beta_0.01.yaml',
-                            'config/task/train/train_slic_beta_0.05.yaml'
-                        ],
-                        help='Paths towards training configuration files to run sequentially')
+    parser.add_argument('--training_config', type=str, 
+                        default='config/task/train/train_rpo.yaml',
+                        help='Path towards training configuration file')
     parser.add_argument('--save_dir', type=str, default='./dpo_output',
                         help='Base path for saving outputs')
     return parser.parse_args()
@@ -83,32 +78,25 @@ def main():
     args = parse_args()
     # Initialize model and dataset
     model_config = DotMap(load_yaml(args.model_config))
+    training_config = DotMap(load_yaml(args.training_config))
+    
+    # Create save directory with training config name
+    save_dir = Path(args.save_dir) / training_config.name
+    save_dir.mkdir(parents=True, exist_ok=True)
+    
+    print(f"Training with configuration: {training_config.name}")
+    print(f"Output will be saved to: {save_dir}")
+    
+    # Initialize model and trainer
+    set_seed(training_config.seed)
     model_agent = HuggingFaceLocalModel(model_config)
     dataset_dict = prepare_data(args.input_file, model_agent.tokenizer)
+    dpo = DPO(model_agent, training_config, str(save_dir))
+    dpo.run(dataset_dict)
     
-    # Run each training configuration sequentially
-    for config_path in args.training_configs:
-        print(f"\n=== Loading training configuration: {config_path} ===")
-        training_config = DotMap(load_yaml(config_path))
-        
-        # Create save directory with training config name
-        save_dir = Path(args.save_dir) / training_config.name
-        save_dir.mkdir(parents=True, exist_ok=True)
-        
-        print(f"Training with configuration: {training_config.name}")
-        print(f"Output will be saved to: {save_dir}")
-        
-        # Initialize trainer
-        set_seed(training_config.seed)
-        dpo = DPO(model_agent, training_config, str(save_dir))
-        dpo.run(dataset_dict)
-        
-        # Clear memory before next configuration
-        print(f"\n=== Completed training with {training_config.name} ===")
-        print("Clearing memory...")
-        clear_memory()
-    
-    print("\n=== All training configurations completed ===")
+    print(f"\n=== Completed training with {training_config.name} ===")
+    # print("Clearing memory...")
+    clear_memory()
 
 
 if __name__ == "__main__":

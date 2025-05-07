@@ -109,8 +109,13 @@ def main():
     dataset = dataset.select(list(range(1)))
     dataset = dataset.map(generate_judging, batched=True, batch_size=2)
     print("dataset response", dataset["correctness"][0], dataset["response"][0], dataset["rouge"][0])
-    filename = args.model_config.split("/")[-1].replace(".yaml", "")
-    filename = filename + "_" + args.input_file.split("/")[-1]#.replace(".json", "")
+    
+    # Extract model name from input file path
+    input_model_name = args.input_file.split('/')[-1].split('_')[0]  # Get the model name from input file
+    judge_model_name = args.model_config.split("/")[-1].replace(".yaml", "")
+    
+    # Create filename with both model names
+    filename = f"{judge_model_name}_judge_{input_model_name}_{args.input_file.split('/')[-1]}"
     dataset.to_json(os.path.join(args.save_dir, filename))
 
 if __name__ == "__main__":

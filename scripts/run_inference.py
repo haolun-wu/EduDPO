@@ -110,10 +110,17 @@ def main():
         return examples
 
     dataset = dataset.select(list(range(1)))
-    dataset = dataset.map(generate_feedback, batched=True, batch_size=2)
+    dataset = dataset.map(generate_feedback, batched=True, batch_size=1)
     print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
-    filename = args.model_config.split("/")[-1].replace(".yaml", "")
-    filename = filename + "_" + args.input_file.split("/")[-1]#.replace(".json", "")
+    
+    # Extract model name from train_folder path
+    if args.train_folder:
+        model_name = args.train_folder.split('/')[-1]  # Get the last part of the path
+    else:
+        model_name = args.model_config.split("/")[-1].replace(".yaml", "")
+    
+    # Create filename with model name
+    filename = f"{model_name}_{args.input_file.split('/')[-1]}"
     dataset.to_json(os.path.join(args.save_dir, filename), lines=False)
 
 if __name__ == "__main__":
