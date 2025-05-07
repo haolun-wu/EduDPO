@@ -13,6 +13,7 @@ from dotmap import DotMap
 from src.data.dpo_data_converter import generate_DPO_training_prompt
 from src.models.HuggingFaceLocalModel import HuggingFaceLocalModel
 from src.models.Inference import Inference
+from utils.distance import rougelcsum_dist
 from utils.files import load_json, load_yaml
 
 from datasets import Dataset  
@@ -100,13 +101,14 @@ def main():
         
         examples["correctness"] = [r["correctness"] for r in responses]
         examples["helpfulness"] = [r["helpfulness"] for r in responses] 
-        examples["response"] = [r["response"] for r in responses] 
+        examples["response"] = [r["response"] for r in responses]
+        examples["rouge"] = [rougelcsum_dist(ta_sol, feedback) for ta_sol, feedback in zip(examples["ta_solution"], examples["feedback"])] #examples[responses]
 
         return examples
 
     dataset = dataset.select(list(range(1)))
     dataset = dataset.map(generate_judging, batched=True, batch_size=2)
-    print("dataset response", dataset["correctness"][0], dataset["response"][0])
+    print("dataset response", dataset["correctness"][0], dataset["response"][0], dataset["rouge"][0])
     filename = args.model_config.split("/")[-1].replace(".yaml", "")
     filename = filename + "_" + args.input_file.split("/")[-1]#.replace(".json", "")
     dataset.to_json(os.path.join(args.save_dir, filename))
