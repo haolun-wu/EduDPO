@@ -61,20 +61,22 @@ def convert_to_dpo_samples(input_file: str, output_file: str) -> None:
         # Sample 1: chosen = ta_feedback, rejected = base_feedback
         dpo_samples.append({
             'sample_id': sample_id,
-            'original_id': item['id'],
+            'id': item['id'],
             'prompt': prompt,
             'chosen': clean_text_formatting(item['ta_feedback']),
-            'rejected': clean_text_formatting(item['base_feedback'])
+            'rejected': clean_text_formatting(item['base_feedback']),
+            'llm': 'base'
         })
         sample_id += 1
         
         # Sample 2: chosen = ta_feedback, rejected = llama_feedback
         dpo_samples.append({
             'sample_id': sample_id,
-            'original_id': item['id'],
+            'id': item['id'],
             'prompt': prompt,
             'chosen': clean_text_formatting(item['ta_feedback']),
-            'rejected': clean_text_formatting(item['llama_feedback'])
+            'rejected': clean_text_formatting(item['llama_feedback']),
+            'llm': 'llama'
         })
         sample_id += 1
     

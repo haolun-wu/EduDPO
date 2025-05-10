@@ -109,8 +109,8 @@ def main():
 
         return examples
 
-    dataset = dataset.select(list(range(1)))
-    dataset = dataset.map(generate_feedback, batched=True, batch_size=1)
+    # dataset = dataset.select(list(range(1)))  # Removing this line to process all samples
+    dataset = dataset.map(generate_feedback, batched=True, batch_size=2)
     print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
     
     # Extract model name from train_folder path
