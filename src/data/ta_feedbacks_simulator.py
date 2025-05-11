@@ -4,7 +4,12 @@ import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import Dict, List, Optional
 from utils.text_processing import clean_text_formatting
+from utils.files import load_yaml
 from tqdm import tqdm
+
+# Load prompt template from config
+PROMPT_CONFIG = load_yaml('config/task/prompt/guideline_generate_feedback.yaml')
+PROMPT_TEMPLATE = PROMPT_CONFIG['prompt_template']
 
 class TAFeedbackSimulator:
     def __init__(self, model_name: str):
@@ -26,25 +31,25 @@ class TAFeedbackSimulator:
 
     def _create_ta_prompt(self, question: str, ta_solution: str, stu_solution: str, 
                         base_feedback: str, llama_feedback: str) -> list:
-        system_message = (
-            "You are an experienced and kind teaching assistant (TA) in a probability course. "
-            "Your task is to provide helpful and constructive feedback on a student's solution to a probability problem. "
-            "You should first state whether the student's solution is correct or not, and write a single paragraph of feedback."
+        # Get the base prompt with the main variables
+        base_prompt = PROMPT_TEMPLATE.format(
+            question_text=question,
+            ta_solution=ta_solution,
+            stu_solution=stu_solution
         )
 
-        user_message = (
-            f"Problem:\n{question}\n\n"
-            f"Suggested Solution (for reference):\n{ta_solution}\n\n"
-            f"Student's Solution:\n{stu_solution}\n\n"
+        # Add the LLM feedbacks to the prompt
+        full_prompt = (
+            f"{base_prompt}\n\n"
             "Two LLMs have provided feedback on the student's solution just for your reference:\n"
             f"1. Feedback from LLM 1 (Base Model):\n{base_feedback}\n\n"
             f"2. Feedback from LLM 2 (Llama Model):\n{llama_feedback}\n\n"
             "Your feedback:"
         )
 
+        # Create chat template structure
         messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message}
+            {"role": "user", "content": full_prompt}
         ]
         return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 

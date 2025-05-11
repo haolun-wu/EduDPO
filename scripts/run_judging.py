@@ -90,7 +90,6 @@ def main():
     dataset = prepare_data(args.input_file, model_agent.tokenizer)
     
     def generate_judging(examples):
-        
         responses = inference_agent.pipe(examples["text"], 
                                          return_full_text=False,
                                          **{"max_new_tokens": 1024})
@@ -99,16 +98,35 @@ def main():
                      for j in range(len(resp))]
         responses = [decode_json_response(r) for r in responses]
         
-        examples["correctness"] = [r["correctness"] for r in responses]
-        examples["helpfulness"] = [r["helpfulness"] for r in responses] 
-        examples["response"] = [r["response"] for r in responses]
-        examples["rouge"] = [rougelcsum_dist(ta_sol, feedback, get_score=True) for ta_sol, feedback in zip(examples["ta_solution"], examples["feedback"])] #examples[responses]
+        # Create result dictionaries in the same format as stu_answers_simulator.py
+        results = []
+        for i, (response, example) in enumerate(zip(responses, examples)):
+            result = {
+                'id': example['id'],
+                'question_text': example['question_text'],
+                'ta_solution': example['ta_solution'],
+                'stu_solution': example['stu_solution'],
+                'feedback': example['feedback'],
+                'correctness': response['correctness'],
+                'helpfulness': response['helpfulness'],
+                'response': response['response'],
+                'rouge': rougelcsum_dist(example['ta_solution'], example['feedback'], get_score=True)
+            }
+            results.append(result)
+        
+        # examples["correctness"] = [r["correctness"] for r in responses]
+        # examples["helpfulness"] = [r["helpfulness"] for r in responses] 
+        # examples["response"] = [r["response"] for r in responses]
+        # examples["rouge"] = [rougelcsum_dist(ta_sol, feedback, get_score=True) for ta_sol, feedback in zip(examples["ta_solution"], examples["feedback"])] #examples[responses]
+        # return examples
+        
+        return results
 
-        return examples
-
-    dataset = dataset.select(list(range(1)))
-    dataset = dataset.map(generate_judging, batched=True, batch_size=2)
-    print("dataset response", dataset["correctness"][0], dataset["response"][0], dataset["rouge"][0])
+    # Process all samples
+    results = []
+    for batch in dataset.iter(batch_size=2):
+        batch_results = generate_judging(batch)
+        results.extend(batch_results)
     
     # Extract model name from input file path
     input_model_name = args.input_file.split('/')[-1].split('_')[0]  # Get the model name from input file
@@ -116,7 +134,15 @@ def main():
     
     # Create filename with both model names
     filename = f"{judge_model_name}_judge_{input_model_name}_{args.input_file.split('/')[-1]}"
-    dataset.to_json(os.path.join(args.save_dir, filename))
+    
+    # Save results in JSON format
+    with open(os.path.join(args.save_dir, filename), 'w') as f:
+        json.dump(results, f, indent=4, ensure_ascii=False)
+    
+    # dataset = dataset.select(list(range(1)))
+    # dataset = dataset.map(generate_judging, batched=True, batch_size=2)
+    # print("dataset response", dataset["correctness"][0], dataset["response"][0], dataset["rouge"][0])
+    # dataset.to_json(os.path.join(args.save_dir, filename))
 
 if __name__ == "__main__":
     main()

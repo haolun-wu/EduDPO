@@ -29,8 +29,6 @@ def parse_args():
 
 
 
-
-
 def prepare_data(file_path, tokenizer):
     """ 
     Loads data from a file and

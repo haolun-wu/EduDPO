@@ -9,13 +9,16 @@ import torch
 import json
 from argparse import ArgumentParser
 from dotmap import DotMap
-from src.data.dpo_data_converter import generate_DPO_training_prompt
 from src.models.HuggingFaceLocalModel import HuggingFaceLocalModel
 from src.models.Inference import Inference
 from utils.files import load_json, load_yaml
+from utils.text_processing import clean_text_formatting
 
 from datasets import Dataset  
 
+# Load prompt template from config
+PROMPT_CONFIG = load_yaml('config/task/prompt/guideline_generate_feedback.yaml')
+PROMPT_TEMPLATE = PROMPT_CONFIG['prompt_template']
 
 def parse_args():
     parser = ArgumentParser(description='Run Inference')
@@ -44,9 +47,14 @@ def prepare_data(file_path, tokenizer):
         raise ValueError(f"Invalid data type {type(data)}")
     
     def add_chat_template(example):
-        text = generate_DPO_training_prompt(example["question_text"], 
-                                            example["ta_solution"], 
-                                            example["stu_solution"])
+        # Generate prompt directly using the template
+        text = PROMPT_TEMPLATE.format(
+            question_text=example["question_text"],
+            ta_solution=example["ta_solution"],
+            stu_solution=example["stu_solution"]
+        )
+        # text = clean_text_formatting(text)
+        
         instruction = [{"role": "user", "content": text}]
         text = tokenizer.apply_chat_template(instruction, 
                                              add_generation_prompt=True, 
@@ -103,15 +111,32 @@ def main():
         print("responses", responses)
         responses = [decode_json_response(r) for r in responses]
         
-        examples["feedback"] = [r["feedback"] for r in responses]
-        examples["rubric"] = [r["rubric"] for r in responses] 
-        examples["response"] = [r["response"] for r in responses] 
+        # Create result dictionaries in the same format as stu_answers_simulator.py
+        results = []
+        for i, (response, example) in enumerate(zip(responses, examples)):
+            result = {
+                'id': example['id'],
+                'question_text': example['question_text'],
+                'ta_solution': example['ta_solution'],
+                'stu_solution': example['stu_solution'],
+                'feedback': response['feedback'],
+                'rubric': response['rubric'],
+                'response': response['response']
+            }
+            results.append(result)
+        
+        # examples["feedback"] = [r["feedback"] for r in responses]
+        # examples["rubric"] = [r["rubric"] for r in responses] 
+        # examples["response"] = [r["response"] for r in responses] 
+        # return examples
+        
+        return results
 
-        return examples
-
-    # dataset = dataset.select(list(range(1)))  # Removing this line to process all samples
-    dataset = dataset.map(generate_feedback, batched=True, batch_size=2)
-    print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
+    # Process all samples
+    results = []
+    for batch in dataset.iter(batch_size=2):
+        batch_results = generate_feedback(batch)
+        results.extend(batch_results)
     
     # Extract model name from train_folder path
     if args.train_folder:
@@ -121,7 +146,15 @@ def main():
     
     # Create filename with model name
     filename = f"{model_name}_{args.input_file.split('/')[-1]}"
-    dataset.to_json(os.path.join(args.save_dir, filename), lines=False)
+    
+    # Save results in JSON format
+    with open(os.path.join(args.save_dir, filename), 'w') as f:
+        json.dump(results, f, indent=4, ensure_ascii=False)
+
+    # dataset = dataset.select(list(range(1)))  # Removing this line to process all samples
+    # dataset = dataset.map(generate_feedback, batched=True, batch_size=2)
+    # print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
+    # dataset.to_json(os.path.join(args.save_dir, filename), lines=False)
 
 if __name__ == "__main__":
     main()
