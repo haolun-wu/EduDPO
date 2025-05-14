@@ -1,6 +1,8 @@
 """ DPO training class """
 
 from utils.cuda import claim_memory
+from warnings import warn
+from peft import PeftModel 
 
 from trl import DPOTrainer, DPOConfig
 from peft import LoraConfig
@@ -38,6 +40,18 @@ class DPO():
         """
 
         model = self.model_agent.model
+
+        if isinstance(model, PeftModel):
+            m = """
+            Model loaded already has an adapter, 
+            we are continuing training with a frozen reference model
+            """
+            warn(m)
+            model.load_adapter(self.model_agent.config.name, 
+                               adapter_name="reference", 
+                               is_trainable=False)
+            training_args["ref_adapter_name"] = "reference"
+
         args = DPOConfig(**training_args)
         
         print("Dataset", dataset_dict)

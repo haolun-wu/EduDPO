@@ -2,6 +2,7 @@
 Runs Direct Preference Optimization training on our current data samples
 """
 
+import os 
 import gc
 import torch
 
@@ -18,7 +19,7 @@ def parse_args():
     parser = ArgumentParser(description='Run DPO')
     parser.add_argument('--input_file', type=str, default="data/processed/dpo_training_samples.json",
                         help='Input JSON file containing the DPO processed data')
-    parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
+    parser.add_argument('--model_config', type=str, default='./sft_output',
                         help='Path towards model configuration file')
     parser.add_argument('--training_configs', nargs='+', type=str, 
                         default=[
@@ -77,12 +78,24 @@ def clear_memory():
         torch.cuda.empty_cache()
     gc.collect()
 
+def load_model_agent(args):
+    if os.path.isfile(args.model_config):
+        model_config = DotMap(load_yaml(args.model_config))
+        model_agent = HuggingFaceLocalModel(model_config)
+    # must be an adapter
+    elif "adapter_config.json" in os.listdir(args.model_config):
+        model_agent = HuggingFaceLocalModel(model_config, is_adapter=True)
+    else:
+        raise ValueError()
+    
+    return model_agent
+
 def main():
     
     args = parse_args()
     # Initialize model and dataset
-    model_config = DotMap(load_yaml(args.model_config))
-    model_agent = HuggingFaceLocalModel(model_config)
+    
+    model_agent = load_model_agent(args)
     dataset_dict = prepare_data(args.input_file, model_agent.tokenizer)
     
     # Run each training configuration sequentially
