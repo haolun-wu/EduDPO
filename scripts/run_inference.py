@@ -5,14 +5,13 @@ import os
 import gc
 import re
 import torch
-
 import json
 from argparse import ArgumentParser
 from dotmap import DotMap
+from utils.files import load_json, load_yaml
 from src.models.HuggingFaceLocalModel import HuggingFaceLocalModel
 from src.models.Inference import Inference
 from utils.files import load_json, load_yaml
-from utils.text_processing import clean_text_formatting
 
 from datasets import Dataset  
 
@@ -20,13 +19,14 @@ from datasets import Dataset
 PROMPT_CONFIG = load_yaml('config/task/prompt/guideline_generate_feedback.yaml')
 PROMPT_TEMPLATE = PROMPT_CONFIG['prompt_template']
 
+
 def parse_args():
     parser = ArgumentParser(description='Run Inference')
     parser.add_argument('--input_file', type=str, default="data/processed/questions_ta_feedbacks_train.json",
                         help='Input JSON file containing TA answers')
     parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
                         help='Path towards model configuration file')
-    parser.add_argument('--train_folder', type=str, default="./dpo_output",
+    parser.add_argument('--train_folder', type=str, default="./model_output",
                         help='Path towards a training configuration file')
     parser.add_argument('--save_dir', type=str, default='./data/inference/',
                         help='Base path for saving outputs')
@@ -47,14 +47,11 @@ def prepare_data(file_path, tokenizer):
         raise ValueError(f"Invalid data type {type(data)}")
     
     def add_chat_template(example):
-        # Generate prompt directly using the template
         text = PROMPT_TEMPLATE.format(
             question_text=example["question_text"],
             ta_solution=example["ta_solution"],
             stu_solution=example["stu_solution"]
         )
-        # text = clean_text_formatting(text)
-        
         instruction = [{"role": "user", "content": text}]
         text = tokenizer.apply_chat_template(instruction, 
                                              add_generation_prompt=True, 
@@ -76,17 +73,6 @@ def clear_memory():
         torch.cuda.empty_cache()
     gc.collect()
 
-
-def decode_json_response(response):
-    try:
-        r = re.search(r'\{\s*[^{}]*?\s*\}', response).group(0)
-        answer_dict = json.loads(r)
-        answer_dict["response"] = response
-    except Exception:
-        answer_dict = {"feedback": "", "rubric": "", 
-                       "response": response}
-    
-    return answer_dict
     
 def main():
     
@@ -109,52 +95,29 @@ def main():
                      for resp in responses 
                      for j in range(len(resp))]
         print("responses", responses)
-        responses = [decode_json_response(r) for r in responses]
         
-        # Create result dictionaries in the same format as stu_answers_simulator.py
-        results = []
-        for i, (response, example) in enumerate(zip(responses, examples)):
-            result = {
-                'id': example['id'],
-                'question_text': example['question_text'],
-                'ta_solution': example['ta_solution'],
-                'stu_solution': example['stu_solution'],
-                'feedback': response['feedback'],
-                'rubric': response['rubric'],
-                'response': response['response']
-            }
-            results.append(result)
-        
-        # examples["feedback"] = [r["feedback"] for r in responses]
-        # examples["rubric"] = [r["rubric"] for r in responses] 
-        # examples["response"] = [r["response"] for r in responses] 
-        # return examples
-        
-        return results
+        examples["infer_feedback"] = responses
+        return examples
 
-    # Process all samples
-    results = []
-    for batch in dataset.iter(batch_size=2):
-        batch_results = generate_feedback(batch)
-        results.extend(batch_results)
+    # dataset = dataset.select(list(range(10)))
+    dataset = dataset.map(generate_feedback, batched=True, batch_size=2)
+    # print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
     
     # Extract model name from train_folder path
     if args.train_folder:
         model_name = args.train_folder.split('/')[-1]  # Get the last part of the path
     else:
         model_name = args.model_config.split("/")[-1].replace(".yaml", "")
-    
-    # Create filename with model name
     filename = f"{model_name}_{args.input_file.split('/')[-1]}"
     
-    # Save results in JSON format
+    # Save with indentation for better readability, matching the example structure
+    data = []
+    for i in range(len(dataset)):
+        example = {col: dataset[col][i] for col in dataset.column_names}
+        data.append(example)
+    
     with open(os.path.join(args.save_dir, filename), 'w') as f:
-        json.dump(results, f, indent=4, ensure_ascii=False)
-
-    # dataset = dataset.select(list(range(1)))  # Removing this line to process all samples
-    # dataset = dataset.map(generate_feedback, batched=True, batch_size=2)
-    # print("dataset feedback and response", dataset["feedback"][0], dataset["response"][0])
-    # dataset.to_json(os.path.join(args.save_dir, filename), lines=False)
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 if __name__ == "__main__":
     main()

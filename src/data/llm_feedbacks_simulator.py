@@ -4,7 +4,12 @@ import re
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import Dict, List, Optional
 from utils.text_processing import clean_text_formatting
+from utils.files import load_yaml
 from tqdm import tqdm
+
+# Load prompt template from config
+PROMPT_CONFIG = load_yaml('config/task/prompt/guideline_generate_feedback.yaml')
+PROMPT_TEMPLATE = PROMPT_CONFIG['prompt_template']
 
 class FeedbackGenerator:
     def __init__(self, model_name: str):
@@ -27,25 +32,24 @@ class FeedbackGenerator:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-    def _create_prompt(self, question: str, ta_solution: str, stu_solution: str) -> str:
+
+    def _create_prompt(self, question: str, ta_solution: str, stu_solution: str) -> list:
+        # Get the base prompt with the main variables
+        base_prompt = PROMPT_TEMPLATE.format(
+            question_text=question,
+            ta_solution=ta_solution,
+            stu_solution=stu_solution
+        )
+
+        # Add the LLM feedbacks to the prompt
+        full_prompt = (
+            f"{base_prompt}\n\n"
+            "Your feedback:"
+        )
+
+        # Create chat template structure
         messages = [
-            {
-                "role": "system", 
-                "content": (
-                    "Please act like a teaching assistant in a probability course. "
-                    "Your task is to provide detailed feedback on a student's solution to a probability problem. "
-                    "You should first state whether the student's solution is correct or not."
-                )
-            },
-            {
-                "role": "user", 
-                "content": (
-                    f"Problem:\n{question}\n\n"
-                    f"Suggested Solution:\n{ta_solution}\n\n"
-                    f"Student's Solution:\n{stu_solution}\n\n"
-                    "Your feedback:"
-                )
-            }
+            {"role": "user", "content": full_prompt}
         ]
         return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
@@ -64,21 +68,18 @@ class FeedbackGenerator:
                 **inputs,
                 pad_token_id=self.tokenizer.pad_token_id,
                 max_new_tokens=1024,
-                # temperature=0.7,
-                # top_p=0.9,
-                # do_sample=True,
-                
             )
         
-        full_response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        full_response = full_response.replace("assistant\n\n", "", 1).strip() # Remove the "assistant" prefix from the response for llama models
+        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         # Extract feedback after "Your feedback:"
-        if "Your feedback:" in full_response:
-            feedback = full_response.split("Your feedback:")[1].strip()
+        if "Your feedback:" in response:
+            feedback = response.split("Your feedback:")[1].strip()
         else:
-            feedback = full_response.strip()
+            feedback = response.strip()
         
+        feedback = re.sub(r'^\s*(<\|assistant\|>|\b[Aa]ssistant\b)\s*:?\s*\n*', '', feedback, count=1).strip()   
+            
         return feedback
 
 def process_llm_feedback(input_file: str, output_file: str, model_names: List[str]):
@@ -120,13 +121,13 @@ def process_llm_feedback(input_file: str, output_file: str, model_names: List[st
                 'llama_feedback': llama_feedback
             })
             
+            # Save after each question in case of interruption
+            with open(output_file, 'w') as f:
+                json.dump(results, f, indent=4, ensure_ascii=False)
+                
         except Exception as e:
             print(f"Error processing question {item['id']}: {str(e)}")
             continue
-    
-    # Save the results
-    with open(output_file, 'w') as f:
-        json.dump(results, f, indent=2)
     
     print(f"\nResults saved to {output_file}")
     

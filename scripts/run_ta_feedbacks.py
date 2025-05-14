@@ -7,7 +7,7 @@ def main():
                         help='Input JSON file containing questions and feedbacks')
     parser.add_argument('--output_file', type=str, default='data/simulated/questions_ta_feedbacks.json',
                         help='Output JSON file to save TA feedback')
-    parser.add_argument('--model', type=str, default='microsoft/Phi-4-mini-instruct',
+    parser.add_argument('--model', type=str, default='Qwen/Qwen2.5-14B-Instruct',
                         help='Model to use for generating TA feedback')
     parser.add_argument('--max_prompt_tokens', type=int, default=6000,
                         help='Maximum number of tokens allowed in the prompt')
@@ -20,7 +20,7 @@ def main():
         input_file=args.input_file,
         output_file=args.output_file,
         model_name=args.model,
-        max_prompt_tokens=args.max_prompt_tokens
+        max_prompt_tokens=args.max_prompt_tokens,
     ) 
     
     print("\nTA feedback generation completed!")

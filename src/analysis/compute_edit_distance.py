@@ -1,27 +1,21 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-from transformers import AutoTokenizer
 from typing import List, Dict, Tuple
 from pathlib import Path
 import seaborn as sns
 import os
+from nltk.tokenize import word_tokenize
+import editdistance
 
 class EditDistanceAnalyzer:
-    def __init__(self, model_name: str = "gpt2"):
-        """
-        Initialize the analyzer with a tokenizer.
-        
-        Args:
-            model_name: The name of the model to use for tokenization (default: "gpt2")
-        """
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        # Set max length to handle longer sequences
-        self.tokenizer.model_max_length = 2048
+    def __init__(self):
+        """Initialize the analyzer."""
+        pass
         
     def calculate_edit_distance(self, text1: str, text2: str) -> Tuple[int, float]:
         """
-        Calculate both raw and normalized edit distance between two texts.
+        Calculate both raw and normalized edit distance between two texts using NLTK word tokenization.
         Normalized distance is calculated as raw_distance / max(len(text1), len(text2))
         to ensure the value is in [0, 1].
         
@@ -32,33 +26,15 @@ class EditDistanceAnalyzer:
         Returns:
             Tuple of (raw_edit_distance, normalized_edit_distance)
         """
-        # Tokenize both texts with truncation
-        tokens1 = self.tokenizer.encode(text1, truncation=True, max_length=2048)
-        tokens2 = self.tokenizer.encode(text2, truncation=True, max_length=2048)
+        # Tokenize both texts using NLTK word tokenization
+        tokens1 = word_tokenize(text1)
+        tokens2 = word_tokenize(text2)
         
-        # Calculate raw edit distance
-        m, n = len(tokens1), len(tokens2)
-        dp = np.zeros((m + 1, n + 1), dtype=int)
+        # Calculate raw edit distance using editdistance package
+        raw_distance = editdistance.eval(tokens1, tokens2)
         
-        # Initialize first row and column
-        for i in range(m + 1):
-            dp[i][0] = i
-        for j in range(n + 1):
-            dp[0][j] = j
-            
-        # Fill the dp table
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                if tokens1[i-1] == tokens2[j-1]:
-                    dp[i][j] = dp[i-1][j-1]
-                else:
-                    dp[i][j] = min(dp[i-1][j-1] + 1,  # substitution
-                                 dp[i-1][j] + 1,      # deletion
-                                 dp[i][j-1] + 1)      # insertion
-        
-        raw_distance = dp[m][n]
         # Normalize by the maximum length of the two sequences
-        normalized_distance = raw_distance / max(m, n) if max(m, n) > 0 else 0
+        normalized_distance = raw_distance / max(len(tokens1), len(tokens2)) if max(len(tokens1), len(tokens2)) > 0 else 0
         
         return raw_distance, normalized_distance
     
@@ -113,22 +89,24 @@ class EditDistanceAnalyzer:
         # Set style using seaborn's default style
         sns.set_theme()
         
+        # Create figure with two subplots side by side
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 6))
+        
         # Plot raw distances
-        plt.figure(figsize=(10, 6))
-        sns.histplot(distances['raw_distances'], bins=50)
-        plt.title('Distribution of Raw Edit Distances')
-        plt.xlabel('Edit Distance')
-        plt.ylabel('Count')
-        plt.savefig(os.path.join(save_dir, 'raw_edit_distances.png'))
-        plt.close()
+        sns.histplot(distances['raw_distances'], bins=50, ax=ax1)
+        ax1.set_title('Distribution of Raw Edit Distances')
+        ax1.set_xlabel('Edit Distance')
+        ax1.set_ylabel('Count')
         
         # Plot normalized distances
-        plt.figure(figsize=(10, 6))
-        sns.histplot(distances['normalized_distances'], bins=50)
-        plt.title('Distribution of Normalized Edit Distances')
-        plt.xlabel('Normalized Edit Distance')
-        plt.ylabel('Count')
-        plt.savefig(os.path.join(save_dir, 'normalized_edit_distances.png'))
+        sns.histplot(distances['normalized_distances'], bins=50, ax=ax2)
+        ax2.set_title('Distribution of Normalized Edit Distances')
+        ax2.set_xlabel('Normalized Edit Distance')
+        ax2.set_ylabel('Count')
+        
+        # Adjust layout and save
+        plt.tight_layout()
+        plt.savefig(os.path.join(save_dir, 'edit_distances_distribution.png'), dpi=300, bbox_inches='tight')
         plt.close()
         
         # Convert to numpy arrays and save
@@ -136,9 +114,9 @@ class EditDistanceAnalyzer:
         normalized_distances_array = np.array(distances['normalized_distances'])
         sample_ids_array = np.array(distances['sample_ids'])
         
-        np.save(os.path.join(save_dir, 'raw_distances.npy'), raw_distances_array)
-        np.save(os.path.join(save_dir, 'normalized_distances.npy'), normalized_distances_array)
-        np.save(os.path.join(save_dir, 'sample_ids.npy'), sample_ids_array)
+        # np.save(os.path.join(save_dir, 'raw_distances.npy'), raw_distances_array)
+        # np.save(os.path.join(save_dir, 'normalized_distances.npy'), normalized_distances_array)
+        # np.save(os.path.join(save_dir, 'sample_ids.npy'), sample_ids_array)
         
         # Save as a JSON file for easier inspection
         results = {

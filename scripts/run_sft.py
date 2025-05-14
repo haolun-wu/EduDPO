@@ -3,7 +3,6 @@ Runs Direct Preference Optimization training on our current data samples
 """
 
 import gc
-from src.data.dpo_data_converter import generate_DPO_training_prompt
 import torch
 from argparse import ArgumentParser
 from dotmap import DotMap
@@ -11,9 +10,13 @@ from src.models.HuggingFaceLocalModel import HuggingFaceLocalModel
 from src.trl.SFT import SFT
 from utils.files import load_json, load_yaml
 from utils.seed import set_seed
+from utils.text_processing import clean_text_formatting
 from pathlib import Path
+from datasets import Dataset, DatasetDict
 
-from datasets import Dataset  
+# Load prompt template from config
+PROMPT_CONFIG = load_yaml('config/task/prompt/guideline_generate_feedback.yaml')
+PROMPT_TEMPLATE = PROMPT_CONFIG['prompt_template']  
 
 """def prepare_dataframe(df, tokenizer):
     text = [tokenizer.apply_chat_template(cleaner_eval(instr), tokenize=False) for instr in df["sft_training_completed"]]
@@ -30,7 +33,7 @@ def parse_args():
     parser.add_argument('--training_configs', nargs='+', type=str, 
                         default=["config/task/train/train_sft_v1.yaml"],
                         help='Paths towards training configuration files to run sequentially')
-    parser.add_argument('--save_dir', type=str, default='./sft_output',
+    parser.add_argument('--save_dir', type=str, default='./model_output',
                         help='Base path for saving outputs')
     return parser.parse_args()
 
@@ -49,22 +52,32 @@ def prepare_data(file_path, tokenizer):
         raise ValueError(f"Invalid data type {type(data)}")
     
     def add_chat_template(example):
-        text = generate_DPO_training_prompt(example["question_text"], 
-                                            example["ta_solution"], 
-                                            example["stu_solution"])
+        # Generate prompt directly using the template
+        text = PROMPT_TEMPLATE.format(
+            question_text=example["question_text"],
+            ta_solution=example["ta_solution"],
+            stu_solution=example["stu_solution"]
+        )
+        # text = clean_text_formatting(text)
+        
         instruction = [{"role": "user", "content": text}, 
-                       {"role": "assistant", "content": example["ta_feedback"]}]
+                      {"role": "assistant", "content": example["ta_feedback"]}]
         print("instruction is", instruction)
         example["text"] = tokenizer.apply_chat_template(instruction, 
-                                                        tokenize=False)
+                                                      tokenize=False)
         
         return example 
     
     dataset = dataset.map(add_chat_template, batched=False)
     print("Example SFT step", dataset[0]["text"])
-    dataset = dataset.train_test_split(test_size=0.1)
+    # dataset = dataset.train_test_split(test_size=0.1)
+    dataset_dict = DatasetDict({
+        "train": dataset,
+        "test": dataset
+    })
 
-    return dataset 
+
+    return dataset_dict 
 
 
 def clear_memory():

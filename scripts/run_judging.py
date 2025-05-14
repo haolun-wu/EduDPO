@@ -10,7 +10,6 @@ import torch
 import json
 from argparse import ArgumentParser
 from dotmap import DotMap
-from src.data.dpo_data_converter import generate_DPO_training_prompt
 from src.models.HuggingFaceLocalModel import HuggingFaceLocalModel
 from src.models.Inference import Inference
 from utils.distance import rougelcsum_dist
@@ -21,7 +20,7 @@ from datasets import Dataset
 
 def parse_args():
     parser = ArgumentParser(description='Run Inference')
-    parser.add_argument('--input_file', type=str, default="data/inference/llama3.1-8b-instruct_questions_ta_feedbacks_train.json",
+    parser.add_argument('--input_file', type=str, default="data/inference/dpo_questions_ta_feedbacks_train.json",
                         help='Input JSON file containing TA answers')
     parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
                         help='Path towards model configuration file that is going to judge')
@@ -47,7 +46,7 @@ def prepare_data(file_path, tokenizer):
         text = generate_judging_prompt(example["question_text"], 
                                        example["ta_solution"], 
                                        example["stu_solution"],
-                                       example["feedback"])
+                                       example["infer_feedback"])
         instruction = [{"role": "user", "content": text}]
         text = tokenizer.apply_chat_template(instruction, 
                                              add_generation_prompt=True, 
@@ -90,59 +89,38 @@ def main():
     dataset = prepare_data(args.input_file, model_agent.tokenizer)
     
     def generate_judging(examples):
+        
         responses = inference_agent.pipe(examples["text"], 
                                          return_full_text=False,
                                          **{"max_new_tokens": 1024})
         responses = [resp[j]['generated_text'] 
                      for resp in responses 
                      for j in range(len(resp))]
+        print("responses", responses)
         responses = [decode_json_response(r) for r in responses]
         
-        # Create result dictionaries in the same format as stu_answers_simulator.py
-        results = []
-        for i, (response, example) in enumerate(zip(responses, examples)):
-            result = {
-                'id': example['id'],
-                'question_text': example['question_text'],
-                'ta_solution': example['ta_solution'],
-                'stu_solution': example['stu_solution'],
-                'feedback': example['feedback'],
-                'correctness': response['correctness'],
-                'helpfulness': response['helpfulness'],
-                'response': response['response'],
-                'rouge': rougelcsum_dist(example['ta_solution'], example['feedback'], get_score=True)
-            }
-            results.append(result)
-        
-        # examples["correctness"] = [r["correctness"] for r in responses]
-        # examples["helpfulness"] = [r["helpfulness"] for r in responses] 
-        # examples["response"] = [r["response"] for r in responses]
-        # examples["rouge"] = [rougelcsum_dist(ta_sol, feedback, get_score=True) for ta_sol, feedback in zip(examples["ta_solution"], examples["feedback"])] #examples[responses]
-        # return examples
-        
-        return results
+        examples["correctness"] = [r["correctness"] for r in responses]
+        examples["helpfulness"] = [r["helpfulness"] for r in responses] 
+        examples["rouge"] = [rougelcsum_dist(ta_sol, feedback, get_score=True) for ta_sol, feedback in zip(examples["ta_solution"], examples["infer_feedback"])] #examples[responses]
 
-    # Process all samples
-    results = []
-    for batch in dataset.iter(batch_size=2):
-        batch_results = generate_judging(batch)
-        results.extend(batch_results)
+        return examples
+
+    # dataset = dataset.select(list(range(10)))
+    dataset = dataset.map(generate_judging, batched=True, batch_size=2)
+    print("dataset response", dataset["correctness"][0], dataset["helpfulness"][0], dataset["rouge"][0])
     
-    # Extract model name from input file path
-    input_model_name = args.input_file.split('/')[-1].split('_')[0]  # Get the model name from input file
-    judge_model_name = args.model_config.split("/")[-1].replace(".yaml", "")
+    # Extract filename from input path and add judging_ prefix
+    input_filename = args.input_file.split("/")[-1]
+    filename = f"judging_{input_filename}"
+                    
+    # Save with indentation for better readability, matching the example structure
+    data = []
+    for i in range(len(dataset)):
+        example = {col: dataset[col][i] for col in dataset.column_names}
+        data.append(example)
     
-    # Create filename with both model names
-    filename = f"{judge_model_name}_judge_{input_model_name}_{args.input_file.split('/')[-1]}"
-    
-    # Save results in JSON format
     with open(os.path.join(args.save_dir, filename), 'w') as f:
-        json.dump(results, f, indent=4, ensure_ascii=False)
-    
-    # dataset = dataset.select(list(range(1)))
-    # dataset = dataset.map(generate_judging, batched=True, batch_size=2)
-    # print("dataset response", dataset["correctness"][0], dataset["response"][0], dataset["rouge"][0])
-    # dataset.to_json(os.path.join(args.save_dir, filename))
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 if __name__ == "__main__":
     main()

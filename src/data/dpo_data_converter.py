@@ -56,6 +56,7 @@ def split_data(data: list, train_ratio: float = 0.8, val_ratio: float = 0.1, tes
                seed: int = 42) -> Tuple[list, list, list]:
     """
     Split the data into train, validation, and test sets.
+    Applies clean_text_formatting to all text fields before splitting.
     
     Args:
         data: List of data samples
@@ -67,23 +68,33 @@ def split_data(data: list, train_ratio: float = 0.8, val_ratio: float = 0.1, tes
     Returns:
         Tuple of (train_data, val_data, test_data)
     """
+    # Clean text formatting for all samples
+    cleaned_data = []
+    for sample in data:
+        cleaned_sample = sample.copy()
+        # Clean text fields
+        cleaned_sample['base_feedback'] = clean_text_formatting(sample['base_feedback'])
+        cleaned_sample['llama_feedback'] = clean_text_formatting(sample['llama_feedback'])
+        cleaned_sample['ta_feedback'] = clean_text_formatting(sample['ta_feedback'])
+        cleaned_data.append(cleaned_sample)
+    
     # Set random seed
     random.seed(seed)
     
     # Shuffle the data
-    random.shuffle(data)
+    random.shuffle(cleaned_data)
     
     # Calculate split indices
-    n = len(data)
+    n = len(cleaned_data)
     # Calculate exact number of samples for each split
     n_train = int(n * train_ratio)
     n_val = int(n * val_ratio)
     n_test = n - n_train - n_val  # Use remaining samples for test set
     
     # Split the data
-    train_data = data[:n_train]
-    val_data = data[n_train:n_train + n_val]
-    test_data = data[n_train + n_val:]
+    train_data = cleaned_data[:n_train]
+    val_data = cleaned_data[n_train:n_train + n_val]
+    test_data = cleaned_data[n_train + n_val:]
     
     return train_data, val_data, test_data
 

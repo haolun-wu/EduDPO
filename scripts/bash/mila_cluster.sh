@@ -12,6 +12,8 @@ module load python/3.10
 nvidia-smi
 
 # python run.py run_data_full_pipeline
+# python run.py run_llm_feedbacks
+# python run.py run_ta_feedbacks
 # python run.py run_dpo_data_process
 
 python run.py run_dpo --training_config config/task/train/train_dpo.yaml

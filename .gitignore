@@ -10,5 +10,4 @@ logs/
 *.out
 
 wandb/
-dpo_output/
-sft_output/
+model_output/

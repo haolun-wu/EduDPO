@@ -12,7 +12,7 @@ from src.trl.DPO import DPO
 from utils.files import load_json, load_yaml
 from utils.seed import set_seed
 from pathlib import Path
-from datasets import Dataset  
+from datasets import Dataset, DatasetDict
 
 def parse_args():
     parser = ArgumentParser(description='Run DPO')
@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('--training_config', type=str, 
                         default='config/task/train/train_rpo.yaml',
                         help='Path towards training configuration file')
-    parser.add_argument('--save_dir', type=str, default='./dpo_output',
+    parser.add_argument('--save_dir', type=str, default='./model_output',
                         help='Base path for saving outputs')
     return parser.parse_args()
 
@@ -61,9 +61,13 @@ def prepare_data(file_path, tokenizer):
         return example 
     
     dataset = dataset.map(add_chat_template, batched=False)
-    dataset = dataset.train_test_split(test_size=0.1)
+    # dataset_dict = dataset.train_test_split(test_size=0.1)
+    dataset_dict = DatasetDict({
+        "train": dataset,
+        "test": dataset
+    })
 
-    return dataset 
+    return dataset_dict 
 
 def clear_memory():
     """Clear GPU memory and run garbage collection"""

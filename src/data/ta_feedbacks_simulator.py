@@ -41,9 +41,6 @@ class TAFeedbackSimulator:
         # Add the LLM feedbacks to the prompt
         full_prompt = (
             f"{base_prompt}\n\n"
-            "Two LLMs have provided feedback on the student's solution just for your reference:\n"
-            f"1. Feedback from LLM 1 (Base Model):\n{base_feedback}\n\n"
-            f"2. Feedback from LLM 2 (Llama Model):\n{llama_feedback}\n\n"
             "Your feedback:"
         )
 
@@ -98,15 +95,10 @@ class TAFeedbackSimulator:
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
                 max_new_tokens=1024,
-                # temperature=0.7,
-                # top_p=0.9,
-                # do_sample=True,
             )
         
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        response = re.sub(r'^[Aa]ssistant\s*\n+', '', response, count=1).strip()
-        # print("Full response:", response[-50:])  # Debug print
-        
+
         # Extract the feedback text
         # The feedback should be everything after "Your feedback:"
         if "Your feedback:" in response:
@@ -114,6 +106,9 @@ class TAFeedbackSimulator:
         else:
             # If we can't find the marker, use the last part of the response
             feedback = response.split("Your feedback:")[-1].strip()
+            
+        feedback = re.sub(r'^\s*(<\|assistant\|>|\b[Aa]ssistant\b)\s*:?\s*\n*', '', feedback, count=1).strip()
+        feedback = re.sub(r'^(\s*<\|assistant\|>\s*|[Aa]ssistant\s*:?)\s*\n+', '', feedback, count=1).strip()
         
         # If we still don't have feedback, use a default message
         if not feedback:

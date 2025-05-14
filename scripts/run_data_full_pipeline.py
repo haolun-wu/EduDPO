@@ -65,7 +65,7 @@ def main():
     parser.add_argument('--stu_model', type=str, default='mistralai/Mistral-7B-Instruct-v0.3')
     parser.add_argument('--llm_models', nargs='+', type=str, 
                         default=['allenai/OLMo-2-1124-7B-Instruct', 'meta-llama/Llama-3.1-8B-Instruct'])
-    parser.add_argument('--ta_model', type=str, default='microsoft/Phi-4-mini-instruct')
+    parser.add_argument('--ta_model', type=str, default='Qwen/Qwen2.5-14B-Instruct')
     
     # Student answer generation parameters
     parser.add_argument('--num_simulations', type=int, default=10)
