@@ -43,6 +43,7 @@ class TRL():
         base_training_args["per_device_eval_batch_size"] = 2 * batch_size
         base_training_args["gradient_checkpointing"] = checkpointing
         base_training_args["use_liger_kernel"] = True 
+        base_training_args["max_length"] = 4096
         ## Base training arguments
         base_training_args["num_train_epochs"] = 3
         base_training_args["lr_scheduler_type"] = "cosine"

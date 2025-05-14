@@ -102,7 +102,7 @@ def main():
         examples["correctness"] = [r["correctness"] for r in responses]
         examples["helpfulness"] = [r["helpfulness"] for r in responses] 
         examples["response"] = [r["response"] for r in responses]
-        examples["rouge"] = [rougelcsum_dist(ta_sol, feedback) for ta_sol, feedback in zip(examples["ta_solution"], examples["feedback"])] #examples[responses]
+        examples["rouge"] = [rougelcsum_dist(ta_sol, feedback) for ta_sol, feedback in zip(examples["ta_feedback"], examples["feedback"])] #examples[responses]
 
         return examples
 
