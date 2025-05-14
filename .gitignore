@@ -9,5 +9,7 @@ __pycache__/
 logs/
 *.out
 
+scripts/bash/*
+
 wandb/
 model_output/

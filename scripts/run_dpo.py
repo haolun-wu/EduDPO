@@ -2,6 +2,7 @@
 Runs Direct Preference Optimization training on our current data samples
 """
 
+import os 
 import gc
 import torch
 
@@ -18,7 +19,7 @@ def parse_args():
     parser = ArgumentParser(description='Run DPO')
     parser.add_argument('--input_file', type=str, default="data/processed/dpo_training_samples.json",
                         help='Input JSON file containing the DPO processed data')
-    parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
+    parser.add_argument('--model_config', type=str, default='./sft_output',
                         help='Path towards model configuration file')
     parser.add_argument('--training_config', type=str, 
                         default='config/task/train/train_rpo.yaml',
@@ -75,30 +76,49 @@ def clear_memory():
         torch.cuda.empty_cache()
     gc.collect()
 
+def load_model_agent(args):
+    if os.path.isfile(args.model_config):
+        model_config = DotMap(load_yaml(args.model_config))
+        model_agent = HuggingFaceLocalModel(model_config)
+    # must be an adapter
+    elif "adapter_config.json" in os.listdir(args.model_config):
+        model_agent = HuggingFaceLocalModel(model_config, is_adapter=True)
+    else:
+        raise ValueError()
+    
+    return model_agent
+
 def main():
     
     args = parse_args()
     # Initialize model and dataset
-    model_config = DotMap(load_yaml(args.model_config))
-    training_config = DotMap(load_yaml(args.training_config))
     
-    # Create save directory with training config name
-    save_dir = Path(args.save_dir) / training_config.name
-    save_dir.mkdir(parents=True, exist_ok=True)
-    
-    print(f"Training with configuration: {training_config.name}")
-    print(f"Output will be saved to: {save_dir}")
-    
-    # Initialize model and trainer
-    set_seed(training_config.seed)
-    model_agent = HuggingFaceLocalModel(model_config)
+    model_agent = load_model_agent(args)
     dataset_dict = prepare_data(args.input_file, model_agent.tokenizer)
-    dpo = DPO(model_agent, training_config, str(save_dir))
-    dpo.run(dataset_dict)
     
-    print(f"\n=== Completed training with {training_config.name} ===")
-    # print("Clearing memory...")
-    clear_memory()
+    # Run each training configuration sequentially
+    for config_path in args.training_configs:
+        print(f"\n=== Loading training configuration: {config_path} ===")
+        training_config = DotMap(load_yaml(config_path))
+        
+        # Create save directory with training config name
+        save_dir = Path(args.save_dir) / training_config.name
+        save_dir.mkdir(parents=True, exist_ok=True)
+        
+        print(f"Training with configuration: {training_config.name}")
+        print(f"Output will be saved to: {save_dir}")
+        
+        # Initialize trainer
+        set_seed(training_config.seed)
+        dpo = DPO(model_agent, training_config, str(save_dir))
+        dpo.run(dataset_dict)
+        
+        # Clear memory before next configuration
+        print(f"\n=== Completed training with {training_config.name} ===")
+        print("Clearing memory...")
+        clear_memory()
+    
+    print("\n=== All training configurations completed ===")
 
 
 if __name__ == "__main__":
