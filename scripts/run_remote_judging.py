@@ -75,7 +75,7 @@ def main():
             "reasoning": pred.reasoning,
             "assessment": pred.asessment,
             "rouge": rougelcsum_dist(df.iloc[i].ta_feedback, 
-                                     x.feedback, get_score=True),
+                                     x.infer_feedback, get_score=True),
             "messages": lm.history[-1]["messages"],
             "cost": lm.history[-1]["cost"],
             "outputs": lm.history[-1]["outputs"],
@@ -85,7 +85,7 @@ def main():
         print("----TA original feedback----")
         print(df.iloc[i].ta_feedback)
         print("----Generated feedback after training----")
-        print(x.feedback)
+        print(x.infer_feedback)
         print("-----")
         print()
         print()

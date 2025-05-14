@@ -40,7 +40,7 @@ class JudgingFeedbackSignature(dspy.Signature):
     question_text = dspy.InputField()
     ta_solution = dspy.InputField()
     stu_solution = dspy.InputField()
-    feedback = dspy.InputField()
+    infer_feedback = dspy.InputField()
 
     reasoning: str = dspy.OutputField()
     asessment: Dict[str, bool] = dspy.OutputField()
@@ -53,7 +53,7 @@ def build_dspy_dataset(dataframe):
             question_text=row.question_text,
             ta_solution=row.ta_solution,
             stu_solution=row.stu_solution,
-            feedback=row.feedback,
-        ).with_inputs("question_text", "ta_solution", "stu_solution", "feedback"))
+            infer_feedback=row.infer_feedback,
+        ).with_inputs("question_text", "ta_solution", "stu_solution", "infer_feedback"))
 
     return dspy_dataset
