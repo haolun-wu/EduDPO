@@ -62,7 +62,7 @@ def main():
     model_config = DotMap(load_yaml(args.model_config))
     lm = dspy.LM(f'{model_config.source}/{model_config.name}', 
                     api_key=os.environ["OPENAI_API_KEY"], 
-                    temperature=0.0, top_p=1.0, max_tokens=5000, stop=None, cache=False)
+                    temperature=0.0, top_p=1.0, max_tokens=5000, stop=None)
     dspy.configure(lm=lm)
 
     # Configuring the prompt for that generation 
