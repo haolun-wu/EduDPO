@@ -11,8 +11,8 @@ from typing import Dict, List, Tuple
 def extract_model_name(filename: str) -> str:
     """Extract model name from filename."""
     base = os.path.basename(filename)
-    # Extract text between 'judging_' and '_questions_ta_feedbacks'
-    model_name = base.split('judging_')[1].split('_questions_ta_feedbacks')[0]
+    # Extract text between first underscore and _questions_ta_feedbacks
+    model_name = base.split('_', 1)[1].split('_questions_ta_feedbacks')[0]
     return model_name
 
 def get_model_priority(model_name: str) -> int:
@@ -127,14 +127,14 @@ def save_table_as_figure(df: pd.DataFrame, save_dir: str = None):
 
 def main():
     # Get all judge files
-    judge_files = glob.glob('data/judge/judging_*_questions_ta_feedbacks_*.json')
+    judge_files = glob.glob('data/judge/*_questions_ta_feedbacks_*.json')
     
     if not judge_files:
         print("No judge files found in data/judge/ directory!")
         print("Current working directory:", os.getcwd())
         print("Trying alternative path...")
         # Try alternative path
-        judge_files = glob.glob('../data/judge/judging_*_questions_ta_feedbacks_*.json')
+        judge_files = glob.glob('../data/judge/*_questions_ta_feedbacks_*.json')
         if not judge_files:
             print("No judge files found in ../data/judge/ directory either!")
             return

@@ -24,9 +24,31 @@ def load_edit_distances(edit_distance_file: str) -> dict:
 
 def load_rouge_scores(judge_file: str) -> list:
     """Load ROUGE scores from the judge file."""
+    rouge_scores = []
     with open(judge_file, 'r') as f:
-        data = json.load(f)
-        return [item['rouge'] for item in data if 'rouge' in item]
+        try:
+            # First try to load the entire file
+            data = json.load(f)
+            rouge_scores = [item['rouge'] for item in data if 'rouge' in item]
+        except json.JSONDecodeError:
+            # If that fails, try to read line by line
+            f.seek(0)
+            for line in f:
+                try:
+                    if line.strip() and line.strip() != '[' and line.strip() != ']':
+                        # Clean up the line to make it a valid JSON object
+                        line = line.strip().rstrip(',')
+                        if line.startswith('['):
+                            line = line[1:]
+                        if line.endswith(']'):
+                            line = line[:-1]
+                        if line:
+                            item = json.loads(line)
+                            if 'rouge' in item:
+                                rouge_scores.append(item['rouge'])
+                except json.JSONDecodeError:
+                    continue
+    return rouge_scores
 
 def plot_correlation(edit_distances: dict, rouge_scores: list, model_name: str, save_dir: str = None) -> Tuple[float, float, float]:
     """
@@ -198,10 +220,14 @@ def main():
         print(f"\nProcessing {model} model...")
         
         # Load ROUGE scores for this model
-        judge_file = f"data/judge/judging_{model}_questions_ta_feedbacks_train.json"
+        judge_file = f"data/judge/gpt-4.1-mini_{model}_questions_ta_feedbacks_train.json"
+        if not os.path.exists(judge_file):
+            print(f"Warning: Judge file not found: {judge_file}")
+            continue
+            
         rouge_scores = load_rouge_scores(judge_file)
         
-        # Create visualization and get correlations
+        # Plot correlation and get correlation coefficients
         base_corr, llama_corr, all_corr = plot_correlation(edit_distances, rouge_scores, model)
         
         # Store correlations
@@ -210,17 +236,13 @@ def main():
             'llama': llama_corr,
             'all': all_corr
         }
-        
-        # Print statistics
-        print(f"Number of edit distance pairs: {len(edit_distances['normalized_distances']) // 2}")
-        print(f"Number of ROUGE scores: {len(rouge_scores)}")
-        print(f"\nCorrelation coefficients:")
-        print(f"Base feedback: {base_corr:.3f}")
-        print(f"Llama feedback: {llama_corr:.3f}")
-        print(f"All feedbacks: {all_corr:.3f}")
     
-    # Create combined visualization
-    plot_combined_correlations(correlations)
+    # Plot combined correlations
+    if correlations:
+        plot_combined_correlations(correlations)
+        print("\nAnalysis complete! Check the edit_distance directory for plots.")
+    else:
+        print("\nNo valid correlations were generated. Please check the input files.")
 
 if __name__ == "__main__":
     main() 
