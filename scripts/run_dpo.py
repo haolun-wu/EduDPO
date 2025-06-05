@@ -19,11 +19,11 @@ def parse_args():
     parser = ArgumentParser(description='Run DPO')
     parser.add_argument('--input_file', type=str, default="data/processed/dpo_training_samples.json",
                         help='Input JSON file containing the DPO processed data')
-    parser.add_argument('--model_config', type=str, default='./model_output/sft_v1',
+    parser.add_argument('--model_config', type=str, default='config/model/llama3.1-8b-instruct.yaml',
                         help='Path towards model configuration file')
-    parser.add_argument('--training_config', type=str, 
-                        default='config/task/train/train_dpo.yaml',
-                        help='Path towards training configuration file')
+    parser.add_argument('--training_configs', nargs='+', type=str, 
+                        default=["config/task/train/train_dpo.yaml"],
+                        help='Paths towards training configuration files to run sequentially')
     parser.add_argument('--save_dir', type=str, default='./model_output',
                         help='Base path for saving outputs')
     return parser.parse_args()

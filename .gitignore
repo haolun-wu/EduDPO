@@ -13,3 +13,5 @@ scripts/bash/*
 
 wandb/
 model_output/
+data/inference/
+data/judge/
